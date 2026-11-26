@@ -1187,11 +1187,17 @@ const track=h=>{if(H.nav){H.nav=0}else if(H.st[H.p-1]===h){H.p--}else if(H.st[H.
 };
 const goH=dir=>{const n=H.p+dir;if(n<0||n>=H.st.length)return false;H.p=n;H.nav=1;location.hash='#'+H.st[n];return true};
 const hint=(dir)=>{const e=$('#swh');e.textContent=dir<0?'←':'→';e.style.left=dir<0?'12px':'';e.style.right=dir<0?'':'12px';e.style.display='grid';clearTimeout(hint.t);hint.t=setTimeout(()=>e.style.display='none',350)};
-let sw=null;
-document.addEventListener('touchstart',e=>{const t=e.touches[0];if(e.touches.length>1||e.target.closest('.chips,.terr,input'))return sw=null;
-const onMap=e.target.closest('#map'),edge=t.clientX<28||t.clientX>innerWidth-28;sw=(onMap&&!edge)?null:{x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
-document.addEventListener('touchend',e=>{if(!sw)return;const t=e.changedTouches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y;
-if(Math.abs(dx)>70&&Math.abs(dy)<Math.abs(dx)*.5&&Date.now()-sw.t<700){const dir=dx>0?-1:1;if(goH(dir))hint(dir)}sw=null},{passive:true});
+let sw=null;const mainEl=document.querySelector('main');
+const swReset=()=>{mainEl.style.transition='transform .18s ease-out';mainEl.style.transform='';sw=null};
+document.addEventListener('touchstart',e=>{if(e.touches.length>1||e.target.closest('#map,#map3d,.chips,.terr,input,textarea,select,iframe,.sheet,.leaflet-control'))return sw=null;
+const t=e.touches[0];sw={x:t.clientX,y:t.clientY,t:Date.now(),lock:null}},{passive:true});
+document.addEventListener('touchmove',e=>{if(!sw)return;const t=e.touches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y;
+if(sw.lock===null&&(Math.abs(dx)>10||Math.abs(dy)>10))sw.lock=Math.abs(dx)>Math.abs(dy)*1.2?'h':'v';
+if(sw.lock==='h'){const can=dx>0?H.p>0:H.p<H.st.length-1;mainEl.style.transition='none';mainEl.style.transform='translateX('+(can?dx*.35:dx*.08)+'px)'}},{passive:true});
+document.addEventListener('touchend',e=>{if(!sw)return;const t=e.changedTouches[0],dx=t.clientX-sw.x,lock=sw.lock;swReset();
+if(lock==='h'&&Math.abs(dx)>60){const dir=dx>0?-1:1;if(goH(dir))hint(dir)}},{passive:true});
+document.addEventListener('touchcancel',()=>{if(sw)swReset()},{passive:true});
+if((matchMedia&&matchMedia('(display-mode: standalone)').matches||navigator.standalone)){try{if(!localStorage.getItem('ge_swipe_tip')){localStorage.setItem('ge_swipe_tip','1');setTimeout(()=>toast('Desliza el dedo a la derecha para volver atrás, y a la izquierda para ir adelante'),1500)}}catch(x){}}
 const route=()=>{const h=location.hash.slice(1)||'explorer';track(h);let v=h,tab=h;
 if(h.startsWith('trail-')&&byId[h.slice(6)]){v='trail';tab='gran-corta';ficha(byId[h.slice(6)])}
 if(h==='explorer'||h==='guia'||h==='gestor')tab='inicio';
