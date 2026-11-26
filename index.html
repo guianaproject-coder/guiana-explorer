@@ -1214,7 +1214,9 @@ if(v==='inicio'||v==='gran-corta'||v==='explorer')setAlt(byId['next-level'].c[0]
 window.scrollTo(0,0)};
 window.addEventListener('hashchange',route);
 paintCar();route();loadE();
-if('serviceWorker' in navigator&&location.hostname.endsWith('github.io'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator&&location.hostname.endsWith('github.io'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
+if('serviceWorker' in navigator){let rl=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(rl)return;rl=true;location.reload()})}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(r=>r&&r.update())});
 }
 </script>
 </body>
