@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Guiana Explorer</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E2E44">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Guiana Explorer">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>/* required styles */
@@ -1060,6 +1068,7 @@ if(v==='inicio'||v==='gran-corta'||v==='explorer')setAlt(byId['next-level'].c[0]
 window.scrollTo(0,0)};
 window.addEventListener('hashchange',route);
 paintCar();route();
+if('serviceWorker' in navigator&&location.hostname.endsWith('github.io'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 </script>
 </body>

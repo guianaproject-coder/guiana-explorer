@@ -1,0 +1,16 @@
+{
+  "name": "Guiana Explorer",
+  "short_name": "Guiana Explorer",
+  "description": "Destinos, senderos y rutas MTB con navegación guiada",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E2E44",
+  "theme_color": "#0E2E44",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
