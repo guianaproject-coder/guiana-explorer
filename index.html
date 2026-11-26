@@ -704,6 +704,17 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--orange);outline-off
 .turn svg{flex:none;transition:transform .3s}
 .turn b{display:block;font:700 26px "Space Grotesk",sans-serif;line-height:1}
 .turn span{font-size:13px;color:#CFE0EA}
+.compass{background:none;border:0;padding:0;cursor:pointer}
+#rose{transition:transform .25s linear;transform-origin:32px 32px}
+.stc.abierto{color:light-dark(#1F6B2E,#8FD19E)}.stc.precaucion{color:light-dark(#A35A00,#F2B36B)}.stc.cerrado{color:light-dark(#B3261E,#F28B82)}
+.alertbar{background:light-dark(#FFF4E5,#3a2a12);border-bottom:1px solid var(--line);padding:10px 16px;font-size:14px;display:none}.alertbar.on{display:block}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+.fld input,.fld select,.fld textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;min-height:44px}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.vbtn{position:absolute;right:10px;z-index:900;min-width:52px;min-height:44px;border:0;border-radius:12px;background:var(--navy);color:#fff;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+#map3d{height:calc(100vh - var(--hh) - 76px);min-height:420px;background:#0b1620}
+.video iframe{width:100%;height:100%;border:0;display:block}
 .swipehint{position:fixed;top:50%;z-index:1200;width:44px;height:44px;margin-top:-22px;border-radius:22px;background:var(--navy);color:#fff;display:none;place-items:center;font-size:22px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .compass{display:flex;flex-direction:column;align-items:center;font-size:11px;color:#CFE0EA;gap:2px}
 .car{background:none;border:0;color:#fff;height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
@@ -784,12 +795,13 @@ main{flex:1;padding-bottom:84px}
 <body>
 <div class="app">
 <header class="nav" aria-label="Cabecera navegador">
-  <div class="compass"><svg width="54" height="54" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#fff" stroke-width="2"/><text x="32" y="13" text-anchor="middle" font-size="9" font-weight="700" fill="#E9922C">N</text><text x="54" y="35" text-anchor="middle" font-size="8" fill="#B8CCD8">E</text><text x="32" y="58" text-anchor="middle" font-size="8" fill="#B8CCD8">S</text><text x="10" y="35" text-anchor="middle" font-size="8" fill="#B8CCD8">O</text><path d="M32 16 L37 32 L32 30 L27 32 Z" fill="#E9922C"/><path d="M32 48 L37 32 L32 34 L27 32 Z" fill="#fff" fill-opacity=".5"/></svg><span>Brújula</span></div>
+  <button class="compass" id="compass" type="button" aria-label="Activar brújula"><svg width="54" height="54" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#fff" stroke-width="2"/><g id="rose"><text x="32" y="13" text-anchor="middle" font-size="9" font-weight="700" fill="#E9922C">N</text><text x="54" y="35" text-anchor="middle" font-size="8" fill="#B8CCD8">E</text><text x="32" y="58" text-anchor="middle" font-size="8" fill="#B8CCD8">S</text><text x="10" y="35" text-anchor="middle" font-size="8" fill="#B8CCD8">O</text><path d="M32 16 L37 32 L32 30 L27 32 Z" fill="#E9922C"/><path d="M32 48 L37 32 L32 34 L27 32 Z" fill="#fff" fill-opacity=".5"/></g><path d="M32 1 L35 6 L29 6Z" fill="#fff"/></svg><span id="cmpt">Brújula</span></button>
   <div class="ctr"><div class="turn" id="turn" role="status" aria-live="polite"><svg id="tarr" width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6 L52 30 H40 V58 H24 V30 H12 Z" fill="#79FCB0"/></svg><div><b id="tdist">—</b><span id="ttxt">Sigue recto</span></div></div><button class="car" id="car" aria-label="Siguiente información"><span class="t1" id="c1"></span><span class="t2" id="c2"></span><span class="dots" id="dots"><i></i><i></i><i></i></span></button></div>
   <div class="alt">Altitud<b id="altv">—</b><span id="alts">en la salida</span></div>
 </header>
 
 <div class="swipehint" id="swh" aria-hidden="true"></div>
+<div class="alertbar" id="alertbar" role="status"></div>
 <main>
 <section class="view" id="v-explorer">
   <div class="hero" style="padding-bottom:14px">
@@ -816,6 +828,7 @@ main{flex:1;padding-bottom:84px}
     <div class="vals"><div><b>Senderos clasificados</b>Dificultad real, escala ITRS</div><div><b>Navegación guiada</b>Avisos solo cuando importan</div><div><b>Apoyas el territorio</b>Tu visita mantiene los senderos</div></div>
     <div class="btns" style="margin-top:14px"><a class="b ol" href="#guia">Guía de uso de la app</a></div>
     <div class="card" style="margin-top:18px;flex-direction:column;align-items:stretch;background:light-dark(#FFF4E6,#3a2a12)"><b>Apoya los senderos</b><span class="small">Las donaciones se destinan al mantenimiento de los senderos de cada territorio.</span><button class="b or" type="button" style="flex:none;align-self:flex-start;min-height:40px" data-toast="Demo: el pago se activará en modo prueba">Donar</button><span class="small" style="font-size:11px">Una iniciativa de Guiana Project</span></div>
+    <p class="small" style="text-align:center;margin-top:18px"><a href="#gestor">Acceso gestor</a></p>
   </div>
 </section>
 
@@ -861,7 +874,8 @@ main{flex:1;padding-bottom:84px}
   <div class="pad">
     <p class="small" style="margin:0">Ride Bierzo · Fabero</p>
     <h1>Gran Corta Gravity Park</h1>
-    <p style="margin:8px 0 0"><span class="st">● Abierto</span> <span class="small">· estado de ejemplo</span></p>
+    <p style="margin:8px 0 0"><span id="gcst"></span> <span class="small" id="gcupd"></span></p>
+    <div class="warn" id="gcnota" style="display:none"></div>
     <div class="counts" id="counts"></div>
     <div class="tip"><b>¿Primera vez aquí?</b> Empieza por El Aprendiz y sigue la progresión de saltos: El Aprendiz → El Crisol → Next Level.</div>
     <div class="btns" style="margin-top:12px"><a class="b gr" href="#mapa">Abrir el mapa</a></div>
@@ -890,11 +904,43 @@ main{flex:1;padding-bottom:84px}
 <section class="view" id="v-mapa">
   <div class="mapbar" role="group" aria-label="Ver trails o rutas"><button type="button" id="mT" class="on">Trails</button><button type="button" id="mR">Rutas sugeridas</button></div>
   <div class="navbanner" id="navb" role="status"><span id="navt">Navegación simulada</span><button type="button" id="navgo" hidden>Empezar navegación</button><button type="button" id="navx">Salir</button></div>
+  <button type="button" class="vbtn" id="to3d" style="top:calc(var(--hh) + 64px)" aria-label="Ver en 3D">3D</button>
   <div id="map" aria-label="Mapa de Gran Corta"></div>
 </section>
 
+<section class="view" id="v-mapa3d">
+  <button type="button" class="vbtn" id="to2d" style="top:calc(var(--hh) + 10px)" aria-label="Volver al mapa 2D">2D</button>
+  <div id="map3d" aria-label="Mapa 3D de Gran Corta"></div>
+</section>
+
+<section class="view" id="v-gestor">
+  <div class="pad">
+    <p class="small" style="margin:0">Acceso restringido</p>
+    <h1>Panel del gestor</h1>
+    <div id="glogin" class="gcard">
+      <b>Clave de acceso</b>
+      <span class="small">Pega aquí el token de GitHub del gestor. Se guarda solo en este dispositivo y se usa para publicar los cambios.</span>
+      <label class="fld">Token<input type="password" id="gtok" autocomplete="off" spellcheck="false"></label>
+      <button class="b gr" type="button" id="gsave">Entrar</button>
+    </div>
+    <div id="gform" hidden>
+      <div class="gcard">
+        <b>Gran Corta Gravity Park</b>
+        <label class="fld">Estado del destino<select id="g-dest"><option value="abierto">Abierto</option><option value="precaucion">Precaución</option><option value="cerrado">Cerrado</option></select></label>
+        <label class="fld">Nota del destino (opcional)<input id="g-nota" placeholder="Ej.: suelo húmedo, rueda con cuidado"></label>
+        <label class="fld">Aviso general para toda la app (opcional)<textarea id="g-aviso" rows="2" placeholder="Ej.: Domingo cerrado por evento"></textarea></label>
+      </div>
+      <h2 style="margin-top:18px">Trails</h2>
+      <div id="gtrails"></div>
+      <div class="btns" style="margin-top:16px"><button class="b ol" type="button" id="gprev">Vista previa</button><button class="b gr" type="button" id="gpub">Publicar</button></div>
+      <p class="small" id="gmsg" role="status"></p>
+      <p class="small"><a href="https://github.com/guianaproject-coder/guiana-explorer/commits/main/estado.json" target="_blank" rel="noopener">Ver historial de cambios</a> · <a href="#" id="gout">Cerrar sesión en este dispositivo</a></p>
+    </div>
+  </div>
+</section>
+
 <section class="view" id="v-trail">
-  <div class="video"><div>▶<br>Vídeo onboard · próximamente</div></div>
+  <div class="video" id="video"><div>▶<br>Vídeo onboard · próximamente</div></div>
   <div class="pad" id="ficha"></div>
 </section>
 </main>
@@ -930,29 +976,74 @@ const stripe=t=>t.sentido==='solo subida'?`repeating-linear-gradient(180deg,${CO
 /* cabecera: carrusel */
 let slide=0;
 const casco='<svg width="20" height="15" viewBox="0 0 74 56" aria-hidden="true"><path d="M62.9 0.0 L4.3 20.2 L1.0 23.9 L0.0 48.0 L4.5 51.8 L11.9 52.9 L26.0 52.9 L56.0 54.9 L56.9 55.9 L63.6 54.7 L73.9 35.0 L73.9 28.9 L70.0 26.0 L64.9 26.0 L32.2 33.4 L32.2 35.6 L36.5 39.8 L56.8 38.4 L56.8 40.6 L48.6 49.8 L45.4 50.9 L17.9 48.0 L13.9 44.0 L16.0 33.5 L20.3 25.1 L58.5 10.7 L62.8 3.4Z" fill="#79FCB0"/></svg>';
-const BASE=[[casco+'GUIANA EXPLORER','Ride Bierzo · Gran Corta · Abierto'],['Puesta de sol','17:56 en Fabero (dato de ejemplo)'],['Viento en la salida','Semáforo de viento · próximamente']];let slides=BASE.map(x=>x.slice());
+const BASE=[[casco+'GUIANA EXPLORER','Ride Bierzo · Gran Corta · Abierto'],['Puesta de sol','Cargando…'],['Viento en la salida','Cargando…']];let slides=BASE.map(x=>x.slice());
 const paintCar=()=>{$('#c1').innerHTML=slides[slide][0];$('#c2').textContent=slides[slide][1];document.querySelectorAll('#dots i').forEach((d,i)=>d.classList.toggle('on',i===slide))};
 $('#car').addEventListener('click',()=>{slide=(slide+1)%3;paintCar()});
 const setAlt=(m,s)=>{$('#altv').textContent=m?Math.round(m).toLocaleString('es-ES')+' m':'—';$('#alts').textContent=s||''};
 
+/* estado (lo edita el gestor) */
+let E={destino:{estado:'abierto',nota:''},aviso_general:'',trails:{},actualizado:null};
+const ST={abierto:'Abierto',precaucion:'Precaución',cerrado:'Cerrado'};
+const sT=id=>Object.assign({estado:'abierto',aviso:'',itrs:'',video:''},E.trails[id]||{});
+const stH=e=>`<span class="st stc ${e}">● ${ST[e]||ST.abierto}</span>`;
+const fmtUpd=iso=>{if(!iso)return '';const d=new Date(iso);return '· actualizado '+d.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})};
+const ytId=u=>{const m=String(u||'').match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([\w-]{11})/);return m?m[1]:null};
+const vimeoId=u=>{const m=String(u||'').match(/vimeo\.com\/(?:video\/)?(\d+)/);return m?m[1]:null};
+const applyE=()=>{renderLists();$('#gcst').innerHTML=stH(E.destino.estado);$('#gcupd').textContent=fmtUpd(E.actualizado);
+const n=$('#gcnota');n.style.display=E.destino.nota?'block':'none';n.textContent=E.destino.nota||'';
+const ab=$('#alertbar');ab.classList.toggle('on',!!E.aviso_general);ab.textContent=E.aviso_general?'⚠ '+E.aviso_general:'';
+BASE[0][1]='Ride Bierzo · Gran Corta · '+(ST[E.destino.estado]||'Abierto');if(!nav){slides[0]=BASE[0].slice();paintCar()}
+if(map)T.forEach(t=>layers[t.id]&&layers[t.id].eachLayer(l=>l.setStyle&&l.setStyle({opacity:sT(t.id).estado==='cerrado'?.3:(l.options.color==='#fff'?.9:1)})));
+const h=location.hash.slice(1);if(h.startsWith('trail-')&&byId[h.slice(6)])ficha(byId[h.slice(6)])};
+const loadE=()=>fetch('estado.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j){E=Object.assign(E,j);applyE()}}).catch(()=>{});
+
 /* listas */
-const row=t=>`<a class="card" href="#trail-${t.id}"><span class="bar" style="background:${stripe(t)}"></span><span style="flex:1"><h3>${esc(t.nombre)}</h3><span class="meta">${km(t.distancia_km)} · ${desn(t)} · ${esc(t.tipo)}</span></span><span class="st">Abierto</span></a>`;
-$('#trails').innerHTML=T.map(row).join('');
+const row=t=>`<a class="card" href="#trail-${t.id}"><span class="bar" style="background:${stripe(t)}"></span><span style="flex:1"><h3>${esc(t.nombre)}</h3><span class="meta">${km(t.distancia_km)} · ${desn(t)} · ${esc(t.tipo)}</span></span>${stH(sT(t.id).estado)}</a>`;
+const renderLists=()=>{$('#trails').innerHTML=T.map(row).join('');$('#destinos').innerHTML=destHTML()};
 const cnt=c=>T.filter(t=>t.dificultad===c).length;
 $('#counts').innerHTML=[['verde','Verde'],['azul','Azul'],['rojo','Rojo'],['negro','Negro']].map(([k,l])=>`<div><b style="color:${COL[k]}">${cnt(k)}</b>${l}</div>`).join('');
 const dest=[['Gran Corta Gravity Park','Fabero · bike park en una mina restaurada',T.length+' trails',true],['Galaxy Park','Cueto · Ride Center Puerta de Ancares','11 senderos'],['La Colmena','Ocero · Ride Center Puerta de Ancares','8 senderos'],['Extremo Aquiliano','Montes Aquilianos · Valdueza','Próximamente']];
-$('#destinos').innerHTML=dest.map(([n,s,c,on])=>`<${on?'a href="#gran-corta"':'div'} class="card"><span class="thumb">${on?'<svg width="60" height="60" viewBox="0 0 74 56" aria-hidden="true"><path d="M62.9 0.0 L4.3 20.2 L1.0 23.9 L0.0 48.0 L4.5 51.8 L11.9 52.9 L26.0 52.9 L56.0 54.9 L56.9 55.9 L63.6 54.7 L73.9 35.0 L73.9 28.9 L70.0 26.0 L64.9 26.0 L32.2 33.4 L32.2 35.6 L36.5 39.8 L56.8 38.4 L56.8 40.6 L48.6 49.8 L45.4 50.9 L17.9 48.0 L13.9 44.0 L16.0 33.5 L20.3 25.1 L58.5 10.7 L62.8 3.4Z" fill="#17714A"/></svg>':''}</span><span style="flex:1"><span class="st ${on?'':'off'}">${on?'● Abierto':'Sin datos aún'}</span><h3>${esc(n)}</h3><span class="meta">${esc(s)}<br>${esc(c)}</span></span></${on?'a':'div'}>`).join('');
+const destHTML=()=>dest.map(([n,s,c,on])=>`<${on?'a href="#gran-corta"':'div'} class="card"><span class="thumb">${on?'<svg width="60" height="60" viewBox="0 0 74 56" aria-hidden="true"><path d="M62.9 0.0 L4.3 20.2 L1.0 23.9 L0.0 48.0 L4.5 51.8 L11.9 52.9 L26.0 52.9 L56.0 54.9 L56.9 55.9 L63.6 54.7 L73.9 35.0 L73.9 28.9 L70.0 26.0 L64.9 26.0 L32.2 33.4 L32.2 35.6 L36.5 39.8 L56.8 38.4 L56.8 40.6 L48.6 49.8 L45.4 50.9 L17.9 48.0 L13.9 44.0 L16.0 33.5 L20.3 25.1 L58.5 10.7 L62.8 3.4Z" fill="#17714A"/></svg>':''}</span><span style="flex:1"><span class="st ${on?'stc '+E.destino.estado:'off'}">${on?'● '+(ST[E.destino.estado]||'Abierto'):'Sin datos aún'}</span><h3>${esc(n)}</h3><span class="meta">${esc(s)}<br>${esc(c)}</span></span></${on?'a':'div'}>`).join('');
+renderLists();
 document.addEventListener('click',e=>{const c=e.target.closest('.chips button');if(!c)return;c.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===c))});
 $('#chipdest').addEventListener('click',()=>toast('Por ahora Guiana Explorer tiene un destino: Ride Bierzo'));
 document.addEventListener('click',e=>{const b=e.target.closest('[data-toast]');if(b)toast(b.dataset.toast)});
+
+/* tiempo: viento y puesta de sol (Open-Meteo) */
+let SUNSET='--:--';
+const WDIR=['N','NE','E','SE','S','SO','O','NO'];
+const loadMeteo=()=>{const c=byId['next-level'].c[0];
+fetch('https://api.open-meteo.com/v1/forecast?latitude='+c[0].toFixed(4)+'&longitude='+c[1].toFixed(4)+'&current=wind_speed_10m,wind_gusts_10m,wind_direction_10m&daily=sunset&timezone=Europe%2FMadrid&wind_speed_unit=kmh&forecast_days=1')
+.then(r=>r.ok?r.json():Promise.reject()).then(j=>{const w=j.current,g=Math.round(w.wind_gusts_10m),v=Math.round(w.wind_speed_10m),dir=WDIR[Math.round(w.wind_direction_10m/45)%8];
+const lvl=g>=40?['🔴','Saltos grandes desaconsejados']:g>=25?['🟠','Precaución en los saltos']:['🟢','Buen día para saltar'];
+SUNSET=(j.daily.sunset[0]||'').slice(11,16)||'--:--';
+BASE[1]=['Puesta de sol '+SUNSET,'Fabero · hoy'];BASE[2]=[lvl[0]+' Viento '+v+' km/h','Rachas '+g+' km/h ('+dir+') · '+lvl[1]];
+if(!nav){slides=BASE.map(x=>x.slice());paintCar()}}).catch(()=>{BASE[1]=['Puesta de sol','Sin datos ahora'];BASE[2]=['Viento','Sin datos ahora'];if(!nav){slides=BASE.map(x=>x.slice());paintCar()}})};
+loadMeteo();setInterval(loadMeteo,15*60*1000);
+
+/* brújula */
+let hdg=null,rot=0,cmpOn=false;
+const CARD=['N','NE','E','SE','S','SO','O','NO'];
+const setHdg=h=>{if(h==null||isNaN(h))return;h=(h%360+360)%360;const target=-h;let d=((target-rot)%360+540)%360-180;rot+=d;hdg=h;
+$('#rose').style.transform='rotate('+rot.toFixed(1)+'deg)';$('#cmpt').textContent=CARD[Math.round(h/45)%8]+' '+Math.round(h)+'°'};
+const onOri=e=>{let h=null;if(typeof e.webkitCompassHeading==='number')h=e.webkitCompassHeading;else if(e.absolute&&e.alpha!=null)h=360-e.alpha;
+if(h!=null){const o=(screen.orientation&&screen.orientation.angle)||window.orientation||0;setHdg(h+o)}};
+const startCmp=()=>{if(cmpOn)return;cmpOn=true;if('ondeviceorientationabsolute' in window)window.addEventListener('deviceorientationabsolute',onOri);else window.addEventListener('deviceorientation',onOri);
+setTimeout(()=>{if(hdg==null){$('#cmpt').textContent='Sin sensor';cmpOn=false}},3000)};
+$('#compass').addEventListener('click',()=>{const D=window.DeviceOrientationEvent;
+if(D&&typeof D.requestPermission==='function'){D.requestPermission().then(r=>{if(r==='granted')startCmp();else toast('Permiso de brújula denegado')}).catch(()=>toast('No se pudo activar la brújula'))}
+else if(D)startCmp();else toast('Este dispositivo no tiene brújula')});
+if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission!=='function'&&window.matchMedia&&matchMedia('(pointer:coarse)').matches)startCmp();
+else if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function')$('#cmpt').textContent='Toca';
 
 /* perfil */
 const profile=t=>{const c=t.c;let d=[0];for(let i=1;i<c.length;i++)d.push(d[i-1]+hav(c[i-1],c[i]));const e=c.map(p=>p[2]),lo=Math.min(...e),hi=Math.max(...e),L=d[d.length-1]||1,W=340,H=100;
 const pts=c.map((p,i)=>[(d[i]/L*W).toFixed(1),(8+(hi-p[2])/((hi-lo)||1)*(H-24)).toFixed(1)]);const line=pts.map(p=>p.join(' ')).join(' L');
 return `<svg class="prof" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Perfil de ${esc(t.nombre)}: de ${hi} a ${lo} m"><path d="M${line} L${W} ${H} L0 ${H}Z" fill="${COL[t.dificultad]}" fill-opacity=".15"/><path d="M${line}" fill="none" stroke="${COL[t.dificultad]}" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg><div class="small" style="display:flex;justify-content:space-between"><span>${e[0]} m</span><span>${Math.round(L)} m recorridos</span><span>${e[e.length-1]} m</span></div>`};
 
-const ficha=t=>{$('#ficha').innerHTML=`<p class="small" style="margin:0">Gran Corta Gravity Park</p><h1>${esc(t.nombre)}</h1>
-<p style="margin:8px 0 0"><span class="tag" style="background:${COL[t.dificultad]}">${t.dificultad.toUpperCase()}</span> <span class="tag" style="background:#5B6670">ITRS: pendiente</span> <span class="st">● Abierto</span></p>
+const ficha=t=>{const vv=sT(t.id).video,yt=ytId(vv),vm=vimeoId(vv);$('#video').innerHTML=yt?`<iframe src="https://www.youtube-nocookie.com/embed/${yt}" title="Vídeo de ${esc(t.nombre)}" allow="fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>`:vm?`<iframe src="https://player.vimeo.com/video/${vm}" title="Vídeo de ${esc(t.nombre)}" allow="fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>`:'<div>▶<br>Vídeo onboard · próximamente</div>';$('#ficha').innerHTML=`<p class="small" style="margin:0">Gran Corta Gravity Park</p><h1>${esc(t.nombre)}</h1>
+<p style="margin:8px 0 0"><span class="tag" style="background:${COL[t.dificultad]}">${t.dificultad.toUpperCase()}</span> <span class="tag" style="background:#5B6670">ITRS: ${esc(sT(t.id).itrs||'pendiente')}</span> ${stH(sT(t.id).estado)}</p>
+${sT(t.id).aviso?`<div class="warn"><b>Aviso del gestor:</b> ${esc(sT(t.id).aviso)}</div>`:''}
 <div class="stats"><div><b>${km(t.distancia_km)}</b><span>Longitud</span></div><div><b>${desn(t)}</b><span>Desnivel</span></div><div><b>${min(t.tiempo_medio)}</b><span>Tiempo medio</span></div><div><b>${t.sentido==='solo subida'?'Subida':'Bajada'}</b><span>Sentido</span></div></div>
 ${profile(t)}
 ${t.aviso?`<div class="warn"><b>Aviso:</b> ${esc(t.aviso)}</div>`:''}
@@ -973,7 +1064,7 @@ setAlt(t.c[0][2],t.sentido==='solo subida'?'en el inicio':'en la salida')};
 /* mapa */
 let map,layers={},halo=null,focusId=null;
 const sheet=$('#sheet');
-const showTrail=id=>{const t=byId[id];sheet.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span><span class="tag" style="background:${COL[t.dificultad]}">${t.dificultad.toUpperCase()}</span> <span class="st">Abierto</span></span><button type="button" class="b ol" style="flex:none;min-height:36px" aria-label="Cerrar" id="xs">✕</button></div><h2>${esc(t.nombre)}</h2><span class="meta">${km(t.distancia_km)} · ${desn(t)} · ${min(t.tiempo_medio)} · ${esc(t.tipo)}</span>${ROUTE.trails.includes(id)?`<span class="small">Rutas que pasan por aquí: <a href="#" id="gor">${esc(ROUTE.nombre)}</a></span>`:''}<div class="btns"><a class="b ol" href="#trail-${id}">Ver ficha</a><button class="b gr" type="button" data-gps="${id}">Navegar con GPS</button></div><button class="b ol" type="button" style="min-height:36px;font-size:13px" data-nav="${id}">Simular llegada (sin GPS)</button>`;sheet.classList.add('on');setAlt(t.c[0][2],'en la salida');$('#xs').onclick=()=>sheet.classList.remove('on');const g=$('#gor');if(g)g.onclick=e=>{e.preventDefault();setMode('rutas')}};
+const showTrail=id=>{const t=byId[id];sheet.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span><span class="tag" style="background:${COL[t.dificultad]}">${t.dificultad.toUpperCase()}</span> ${stH(sT(id).estado)}</span><button type="button" class="b ol" style="flex:none;min-height:36px" aria-label="Cerrar" id="xs">✕</button></div><h2>${esc(t.nombre)}</h2><span class="meta">${km(t.distancia_km)} · ${desn(t)} · ${min(t.tiempo_medio)} · ${esc(t.tipo)}</span>${ROUTE.trails.includes(id)?`<span class="small">Rutas que pasan por aquí: <a href="#" id="gor">${esc(ROUTE.nombre)}</a></span>`:''}<div class="btns"><a class="b ol" href="#trail-${id}">Ver ficha</a><button class="b gr" type="button" data-gps="${id}">Navegar con GPS</button></div><button class="b ol" type="button" style="min-height:36px;font-size:13px" data-nav="${id}">Simular llegada (sin GPS)</button>`;sheet.classList.add('on');setAlt(t.c[0][2],'en la salida');$('#xs').onclick=()=>sheet.classList.remove('on');const g=$('#gor');if(g)g.onclick=e=>{e.preventDefault();setMode('rutas')}};
 const showRoute=()=>{const ts=ROUTE.trails.map(i=>byId[i]);const L=ts.reduce((a,t)=>a+t.distancia_km,0),up=ts.reduce((a,t)=>a+(t.desnivel_positivo_m||0),0),dn=ts.reduce((a,t)=>a+(t.desnivel_negativo_m||0),0);
 sheet.innerHTML=`<span><span class="tag" style="background:#C99A00">RUTA SUGERIDA</span> <span class="small">Lineal</span></span><h2>${esc(ROUTE.nombre)}</h2><span class="meta">${L.toFixed(1).replace('.',',')} km · +${up} m / −${dn} m · MTB</span><b style="font-size:13px">Senderos que la componen</b>${ts.map(t=>`<a class="card" style="padding:8px" href="#trail-${t.id}"><span class="bar" style="background:${stripe(t)}"></span><span style="flex:1">${esc(t.nombre)}</span><span class="small">${t.sentido==='solo subida'?'subida':'▶ vídeo'}</span></a>`).join('')}<div class="btns"><a class="b ol" href="https://www.google.com/maps/dir/?api=1&destination=${ts[0].c[0][0]},${ts[0].c[0][1]}" target="_blank" rel="noopener">Ir a la salida</a><button class="b gr" type="button" data-gps="${ROUTE.trails.join(',')}">Navegar con GPS</button></div><button class="b ol" type="button" style="min-height:36px;font-size:13px" data-nav="${ROUTE.trails.join(',')}">Simular llegada (sin GPS)</button>`;sheet.classList.add('on')};
 const setMode=m=>{$('#mT').classList.toggle('on',m==='trails');$('#mR').classList.toggle('on',m==='rutas');if(halo){map.removeLayer(halo);halo=null}
@@ -983,11 +1074,57 @@ const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxNa
 const orto=L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}',{maxNativeZoom:19,maxZoom:19,attribution:'PNOA © IGN España'});
 L.control.layers({'Topográfico':topo,'Ortofoto':orto},null,{position:'bottomleft'}).addTo(map);
 const all=T.flatMap(t=>t.c.map(p=>[p[0],p[1]]));map.fitBounds(all,{padding:[30,30]});
-T.forEach(t=>{const ll=t.c.map(p=>[p[0],p[1]]);const g=L.layerGroup([L.polyline(ll,{color:'#fff',weight:10,opacity:.9}),L.polyline(ll,{color:COL[t.dificultad],weight:5,dashArray:t.sentido==='solo subida'?'8 6':null})]).addTo(map);
+T.forEach(t=>{const ll=t.c.map(p=>[p[0],p[1]]);const g=L.layerGroup([L.polyline(ll,{color:'#fff',weight:10,opacity:.9}),L.polyline(ll,{color:COL[t.dificultad],weight:5,opacity:sT(t.id).estado==='cerrado'?.3:1,dashArray:t.sentido==='solo subida'?'8 6':null})]).addTo(map);
 g.eachLayer(l=>l.on('click',()=>{setMode('trails');showTrail(t.id)}));layers[t.id]=g;
 L.circleMarker(ll[0],{radius:5,color:'#fff',weight:2,fillColor:COL[t.dificultad],fillOpacity:1}).bindTooltip(t.nombre,{direction:'top'}).addTo(map).on('click',()=>{setMode('trails');showTrail(t.id)})});};
 $('#mT').onclick=()=>setMode('trails');$('#mR').onclick=()=>setMode('rutas');
 document.addEventListener('click',e=>{const a=e.target.closest('[data-focus]');if(a)focusId=a.dataset.focus});
+
+/* mapa 3D (MapLibre, se carga al abrirlo) */
+let m3=null,m3load=null;
+const libre=()=>m3load||(m3load=new Promise((ok,ko)=>{const c=document.createElement('link');c.rel='stylesheet';c.href='https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';document.head.appendChild(c);
+const j=document.createElement('script');j.src='https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';j.onload=ok;j.onerror=ko;document.head.appendChild(j)}));
+const init3d=()=>{if(m3){setTimeout(()=>m3.resize(),50);return}libre().then(()=>{const ml=window.maplibregl;
+const gj={type:'FeatureCollection',features:T.map(t=>({type:'Feature',properties:{id:t.id,nombre:t.nombre,color:COL[t.dificultad],cerrado:sT(t.id).estado==='cerrado'},geometry:{type:'LineString',coordinates:t.c.map(p=>[p[1],p[0]])}}))};
+const all=T.flatMap(t=>t.c.map(p=>[p[1],p[0]]));const xs=all.map(p=>p[0]),ys=all.map(p=>p[1]);
+m3=new ml.Map({container:'map3d',attributionControl:{compact:true},maxPitch:80,style:{version:8,
+sources:{orto:{type:'raster',tiles:['https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}'],tileSize:256,maxzoom:19,attribution:'PNOA © IGN España'},
+dem:{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:15,attribution:'Relieve: Terrain Tiles (AWS Open Data)'},
+tr:{type:'geojson',data:gj}},
+layers:[{id:'orto',type:'raster',source:'orto'},
+{id:'trc',type:'line',source:'tr',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#fff','line-width':7,'line-opacity':.9}},
+{id:'trl',type:'line',source:'tr',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['get','color'],'line-width':4,'line-opacity':['case',['get','cerrado'],.35,1]}}],
+terrain:{source:'dem',exaggeration:1.5}},
+bounds:[[Math.min(...xs),Math.min(...ys)],[Math.max(...xs),Math.max(...ys)]],fitBoundsOptions:{padding:40},pitch:65,bearing:-25});
+m3.addControl(new ml.NavigationControl({visualizePitch:true}),'bottom-right');
+m3.on('load',()=>{m3.easeTo({pitch:65,bearing:-25,duration:0})});
+m3.on('click','trl',e=>{const f=e.features[0];location.hash='#trail-'+f.properties.id});
+m3.on('mouseenter','trl',()=>m3.getCanvas().style.cursor='pointer');m3.on('mouseleave','trl',()=>m3.getCanvas().style.cursor='')}).catch(()=>toast('No se pudo cargar el mapa 3D. Revisa la conexión.'))};
+$('#to3d').onclick=()=>{location.hash='#mapa3d'};$('#to2d').onclick=()=>{location.hash='#mapa'};
+
+/* panel del gestor */
+const REPO='guianaproject-coder/guiana-explorer',GK='ge_gestor_token';
+const tok=()=>{try{return localStorage.getItem(GK)}catch(e){return null}};
+const gFill=()=>{$('#g-dest').value=E.destino.estado||'abierto';$('#g-nota').value=E.destino.nota||'';$('#g-aviso').value=E.aviso_general||'';
+$('#gtrails').innerHTML=T.map(t=>{const x=sT(t.id);return `<div class="gcard" data-gt="${t.id}"><b><span class="tag" style="background:${COL[t.dificultad]}">${t.dificultad.toUpperCase()}</span> ${esc(t.nombre)}</b>
+<div class="g2"><label class="fld">Estado<select data-k="estado">${Object.entries(ST).map(([k,l])=>`<option value="${k}"${x.estado===k?' selected':''}>${l}</option>`).join('')}</select></label><label class="fld">ITRS<input data-k="itrs" value="${esc(x.itrs)}" placeholder="pendiente"></label></div>
+<label class="fld">Aviso (opcional)<input data-k="aviso" value="${esc(x.aviso)}" placeholder="Ej.: salto 3 en obras"></label>
+<label class="fld">Vídeo (enlace de YouTube o Vimeo)<input data-k="video" value="${esc(x.video)}" inputmode="url" placeholder="https://youtu.be/..."></label></div>`}).join('')};
+const gRead=()=>{const tr={};document.querySelectorAll('[data-gt]').forEach(c=>{const o={};c.querySelectorAll('[data-k]').forEach(i=>{const v=i.value.trim();if(v)o[i.dataset.k]=v});tr[c.dataset.gt]=o});
+return{destino:{estado:$('#g-dest').value,nota:$('#g-nota').value.trim()},aviso_general:$('#g-aviso').value.trim(),trails:tr,actualizado:new Date().toISOString()}};
+const gShow=()=>{const t=tok();$('#glogin').hidden=!!t;$('#gform').hidden=!t;if(t)gFill()};
+$('#gsave').onclick=()=>{const v=$('#gtok').value.trim();if(!v){toast('Pega la clave');return}
+fetch('https://api.github.com/repos/'+REPO,{headers:{Authorization:'Bearer '+v,Accept:'application/vnd.github+json'}}).then(r=>r.json().then(j=>[r,j])).then(([r,j])=>{
+if(!r.ok){toast('Clave no válida');return}if(!(j.permissions&&j.permissions.push)){toast('La clave no tiene permiso de escritura');return}
+try{localStorage.setItem(GK,v)}catch(e){}$('#gtok').value='';gShow();toast('Sesión iniciada')}).catch(()=>toast('Sin conexión con GitHub'))};
+$('#gout').onclick=e=>{e.preventDefault();try{localStorage.removeItem(GK)}catch(x){}gShow();toast('Sesión cerrada en este dispositivo')};
+$('#gprev').onclick=()=>{E=Object.assign(E,gRead());applyE();toast('Vista previa aplicada solo en este dispositivo')};
+const b64=s=>btoa(unescape(encodeURIComponent(s)));
+$('#gpub').onclick=()=>{const t=tok();if(!t)return gShow();const data=gRead(),url='https://api.github.com/repos/'+REPO+'/contents/estado.json',H={Authorization:'Bearer '+t,Accept:'application/vnd.github+json'};
+$('#gpub').disabled=true;$('#gmsg').textContent='Publicando…';
+fetch(url+'?ref=main',{headers:H}).then(r=>r.ok?r.json():{}).then(cur=>fetch(url,{method:'PUT',headers:H,body:JSON.stringify({message:'Estado actualizado desde el panel del gestor',content:b64(JSON.stringify(data,null,2)+'\n'),sha:cur.sha,branch:'main'})}))
+.then(r=>{if(!r.ok)throw new Error(r.status);E=Object.assign(E,data);applyE();$('#gmsg').textContent='Publicado. Los usuarios lo verán en 1 o 2 minutos.';toast('Cambios publicados')})
+.catch(e=>{$('#gmsg').textContent='No se pudo publicar ('+e.message+'). Revisa la clave o la conexión.'}).finally(()=>{$('#gpub').disabled=false})};
 
 /* fotos (solo en este navegador) */
 document.addEventListener('change',e=>{const i=e.target.closest('input[data-gal]');if(!i)return;const g=document.getElementById(i.dataset.gal);
@@ -1018,7 +1155,7 @@ const paintNav=(ll,alt,off)=>{const p=nav.pts[nav.i],L=nav.d[nav.d.length-1],rem
 nav.mk.setLatLng(ll);if(nav.gps||nav.i%8===0)map.panTo(ll,{animate:true});
 const end=nav.pts[nav.pts.length-1].e,eta=new Date(Date.now()+nav.total*1000*rem/L),e=alt??p.e;
 slides[0]=off>35?['⚠ Fuera del trazado','A '+fmtD(off)+' de '+esc(t.nombre)]:['▲ '+esc(t.nombre),'Quedan '+fmtD(rem)];
-slides[1]=['Puesta de sol 17:56','Llegada estimada '+fmtH(eta)];slides[2]=['Después',nx?esc(nx.nombre):'Fin de la ruta'];paintCar();
+slides[1]=['Puesta de sol '+SUNSET,'Llegada estimada '+fmtH(eta)];slides[2]=['Después',nx?esc(nx.nombre):'Fin de la ruta'];paintCar();
 setAlt(e,(e>end?'↓ ':'↑ ')+Math.abs(Math.round(e-end))+' m al final');$('#navt').textContent=(nav.gps?'Navegando con GPS: ':'Navegando (simulado): ')+t.nombre;
 turnInfo();if(rem<15){const id=t.id;stopNav(true);toast('Has llegado. ¿Cómo estaba la ruta?');location.hash='#trail-'+id;return true}};
 const stepNav=()=>{if(!nav)return;const p=nav.pts[nav.i];if(paintNav(p.ll,null,0))return;nav.i++;if(nav!==null&&nav.i>=nav.pts.length)nav.i=nav.pts.length-1};
@@ -1057,17 +1194,20 @@ document.addEventListener('touchend',e=>{if(!sw)return;const t=e.changedTouches[
 if(Math.abs(dx)>70&&Math.abs(dy)<Math.abs(dx)*.5&&Date.now()-sw.t<700){const dir=dx>0?-1:1;if(goH(dir))hint(dir)}sw=null},{passive:true});
 const route=()=>{const h=location.hash.slice(1)||'explorer';track(h);let v=h,tab=h;
 if(h.startsWith('trail-')&&byId[h.slice(6)]){v='trail';tab='gran-corta';ficha(byId[h.slice(6)])}
-if(h==='explorer'||h==='guia')tab='inicio';
+if(h==='explorer'||h==='guia'||h==='gestor')tab='inicio';
+if(h==='mapa3d')tab='mapa';
 if(h==='info'){toast('Info: normas, cómo llegar y contacto · próximamente');v='gran-corta';tab='info'}
 if(!document.getElementById('v-'+v)){v='explorer';tab='inicio'}
 document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
 document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.t===tab));
 if(v!=='mapa'){sheet.classList.remove('on');if(nav&&nav.tm)stopNav(true)}
+if(v==='mapa3d')init3d();
+if(v==='gestor')gShow();
 if(v==='mapa'){initMap();setTimeout(()=>{map&&map.invalidateSize();if(nav){runNav();return}if(routeFocus){routeFocus=null;setMode('rutas');return}if(focusId&&layers[focusId]){map.fitBounds(L.featureGroup(layers[focusId].getLayers()).getBounds(),{padding:[60,60]});showTrail(focusId);focusId=null}},50)}
 if(v==='inicio'||v==='gran-corta'||v==='explorer')setAlt(byId['next-level'].c[0][2],'salida superior');
 window.scrollTo(0,0)};
 window.addEventListener('hashchange',route);
-paintCar();route();
+paintCar();route();loadE();
 if('serviceWorker' in navigator&&location.hostname.endsWith('github.io'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 </script>
