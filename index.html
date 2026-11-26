@@ -716,6 +716,8 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--orange);outline-off
 .exag{position:absolute;left:10px;top:calc(var(--hh) + 10px);z-index:900;display:flex;align-items:center;gap:4px;background:var(--card);border-radius:12px;padding:4px;box-shadow:0 1px 4px rgba(0,0,0,.3);font-weight:700;font-size:14px}
 .exag button{width:44px;height:40px;border:0;border-radius:9px;background:var(--navy);color:#fff;font-size:20px;font-weight:700}
 .exag span{min-width:96px;text-align:center}
+.medot{width:16px;height:16px;border-radius:50%;background:#1F6FD1;border:3px solid #fff;box-shadow:0 0 0 2px rgba(31,111,209,.35)}
+@media (prefers-reduced-motion:no-preference){.mepulse{animation:mp 2s ease-out infinite}@keyframes mp{0%{stroke-opacity:.8;stroke-width:2}100%{stroke-opacity:0;stroke-width:14}}}
 #map3d{height:calc(100vh - var(--hh) - 76px);min-height:420px;background:#0b1620}
 .video iframe{width:100%;height:100%;border:0;display:block}
 .swipehint{position:fixed;top:50%;z-index:1200;width:44px;height:44px;margin-top:-22px;border-radius:22px;background:var(--navy);color:#fff;display:none;place-items:center;font-size:22px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
@@ -935,11 +937,13 @@ main{flex:1;padding-bottom:84px}
   <div class="mapbar" role="group" aria-label="Ver trails o rutas"><button type="button" id="mT" class="on">Trails</button><button type="button" id="mR">Rutas sugeridas</button></div>
   <div class="navbanner" id="navb" role="status"><span id="navt">Navegación simulada</span><button type="button" id="navgo" hidden>Empezar navegación</button><button type="button" id="navx">Salir</button></div>
   <button type="button" class="vbtn" id="to3d" style="top:calc(var(--hh) + 64px)" aria-label="Ver en 3D">3D</button>
+  <button type="button" class="vbtn" id="locme" style="top:calc(var(--hh) + 116px);font-size:20px" aria-label="Centrar en mi posición">◎</button>
   <div id="map" aria-label="Mapa de Gran Corta"></div>
 </section>
 
 <section class="view" id="v-mapa3d">
   <button type="button" class="vbtn" id="to2d" style="top:calc(var(--hh) + 10px)" aria-label="Volver al mapa 2D">2D</button>
+  <button type="button" class="vbtn" id="locme3" style="top:calc(var(--hh) + 62px);font-size:20px" aria-label="Centrar en mi posición">◎</button>
   <div class="exag" role="group" aria-label="Escala del relieve"><button type="button" id="exm" aria-label="Menos relieve">−</button><span id="exv">Relieve ×2,5</span><button type="button" id="exp" aria-label="Más relieve">+</button></div>
   <div id="map3d" aria-label="Mapa 3D de Gran Corta"></div>
 </section>
@@ -1112,6 +1116,19 @@ $('#mT').onclick=()=>setMode('trails');$('#mR').onclick=()=>{if(curDest!=='gran-
 let lastFit=null;const fitDest=()=>{if(!map||lastFit===curDest)return;lastFit=curDest;const pts=TD().flatMap(t=>t.c.map(p=>[p[0],p[1]]));if(pts.length)map.fitBounds(pts,{padding:[30,30]})};
 document.addEventListener('click',e=>{const a=e.target.closest('[data-focus]');if(a)focusId=a.dataset.focus});
 
+/* mi posición en el mapa (siempre que el mapa esté abierto y la app visible) */
+const ME={w:null,ll:null,acc:null,mk:null,ring:null,circ:null,m3:null,warned:false,want:false};
+const meDraw=()=>{if(!ME.ll)return;const hideOnNav=nav&&nav.gps;
+if(map){if(!ME.mk){ME.circ=L.circle(ME.ll,{radius:ME.acc||20,color:'#1F6FD1',weight:1,fillOpacity:.08,interactive:false}).addTo(map);ME.ring=L.circleMarker(ME.ll,{radius:9,color:'#1F6FD1',weight:2,fill:false,className:'mepulse',interactive:false}).addTo(map);ME.mk=L.circleMarker(ME.ll,{radius:7,color:'#fff',weight:3,fillColor:'#1F6FD1',fillOpacity:1}).bindTooltip('Estás aquí',{direction:'top'}).addTo(map)}
+[ME.mk,ME.ring,ME.circ].forEach(l=>{l.setLatLng(ME.ll);l.setStyle({opacity:hideOnNav?0:1,fillOpacity:hideOnNav?0:(l===ME.circ?.08:1)})});ME.circ.setRadius(ME.acc||20)}
+if(m3&&window.maplibregl){if(!ME.m3){const el=document.createElement('div');el.className='medot';ME.m3=new maplibregl.Marker({element:el}).setLngLat([ME.ll[1],ME.ll[0]]).addTo(m3)}else ME.m3.setLngLat([ME.ll[1],ME.ll[0]])}};
+const meStart=()=>{ME.want=true;if(ME.w!==null||!navigator.geolocation||document.visibilityState==='hidden')return;
+ME.w=navigator.geolocation.watchPosition(p=>{ME.ll=[p.coords.latitude,p.coords.longitude];ME.acc=p.coords.accuracy;meDraw()},e=>{if(e.code===1&&!ME.warned){ME.warned=true;toast('Activa la ubicación para verte en el mapa')}},{enableHighAccuracy:true,maximumAge:5000,timeout:30000})};
+const meStop=()=>{if(ME.w!==null){navigator.geolocation.clearWatch(ME.w);ME.w=null}};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')meStop();else if(ME.want)meStart()});
+const meCenter=m=>{if(!ME.ll){meStart();toast('Buscando tu posición…');return}
+if(m==='3d'&&m3)m3.easeTo({center:[ME.ll[1],ME.ll[0]],zoom:16,duration:800});else if(map)map.setView(ME.ll,Math.max(map.getZoom(),16))};
+
 /* mapa 3D (MapLibre, se carga al abrirlo) */
 let m3=null,m3load=null,EXG=2.5;
 const setExg=v=>{EXG=Math.max(1,Math.min(5,Math.round(v*2)/2));$('#exv').textContent='Relieve ×'+String(EXG).replace('.',',');if(m3&&m3.getSource('dem'))m3.setTerrain({source:'dem',exaggeration:EXG})};
@@ -1130,10 +1147,11 @@ layers:[{id:'orto',type:'raster',source:'orto'},
 terrain:{source:'dem',exaggeration:EXG}},
 bounds:[[Math.min(...xs),Math.min(...ys)],[Math.max(...xs),Math.max(...ys)]],fitBoundsOptions:{padding:40},pitch:65,bearing:-25});
 m3.addControl(new ml.NavigationControl({visualizePitch:true}),'bottom-right');
-m3.on('load',()=>{m3.easeTo({pitch:65,bearing:-25,duration:0})});
+m3.on('load',()=>{m3.easeTo({pitch:65,bearing:-25,duration:0});meDraw()});
 m3.on('click','trl',e=>{const f=e.features[0];location.hash='#trail-'+f.properties.id});
 m3.on('mouseenter','trl',()=>m3.getCanvas().style.cursor='pointer');m3.on('mouseleave','trl',()=>m3.getCanvas().style.cursor='')}).catch(()=>toast('No se pudo cargar el mapa 3D. Revisa la conexión.'))};
 $('#exm').onclick=()=>setExg(EXG-.5);$('#exp').onclick=()=>setExg(EXG+.5);
+$('#locme').onclick=()=>meCenter('2d');$('#locme3').onclick=()=>meCenter('3d');
 $('#to3d').onclick=()=>{location.hash='#mapa3d'};$('#to2d').onclick=()=>{location.hash='#mapa'};
 
 /* panel del gestor */
@@ -1246,9 +1264,9 @@ if(!document.getElementById('v-'+v)){v='explorer';tab='inicio'}
 document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
 document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.t===tab));
 if(v!=='mapa'){sheet.classList.remove('on');if(nav&&nav.tm)stopNav(true)}
-if(v==='mapa3d')init3d();
+if(v==='mapa3d'){init3d();meStart()}
 if(v==='gestor')gShow();
-if(v==='mapa'){initMap();setTimeout(()=>{map&&map.invalidateSize();fitDest();if(nav){runNav();return}if(routeFocus){routeFocus=null;setMode('rutas');return}if(focusId&&layers[focusId]){map.fitBounds(L.featureGroup(layers[focusId].getLayers()).getBounds(),{padding:[60,60]});showTrail(focusId);focusId=null}},50)}
+if(v==='mapa'){initMap();setTimeout(()=>{map&&map.invalidateSize();fitDest();meStart();meDraw();if(nav){runNav();return}if(routeFocus){routeFocus=null;setMode('rutas');return}if(focusId&&layers[focusId]){map.fitBounds(L.featureGroup(layers[focusId].getLayers()).getBounds(),{padding:[60,60]});showTrail(focusId);focusId=null}},50)}
 if(v==='inicio'||v==='gran-corta'||v==='explorer')setAlt(byId['next-level'].c[0][2],'salida superior');
 window.scrollTo(0,0)};
 window.addEventListener('hashchange',route);
