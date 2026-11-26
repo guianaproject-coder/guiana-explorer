@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guiana Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>/* required styles */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	}
+.leaflet-container {
+	overflow: hidden;
+	}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+	}
+/* Prevents IE11 from highlighting tiles in blue */
+.leaflet-tile::selection {
+	background: transparent;
+}
+/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+	}
+/* hack that prevents hw layers "stretching" when loading new tiles */
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+	}
+/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
+/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+	}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+	}
+
+.leaflet-container img.leaflet-tile {
+	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
+	mix-blend-mode: plus-lighter;
+}
+
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+	}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	/* Fallback for FF which doesn't support pinch-zoom */
+	touch-action: none;
+	touch-action: pinch-zoom;
+}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+	}
+.leaflet-tile-loaded {
+	visibility: inherit;
+	}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+	}
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+	}
+
+.leaflet-pane         { z-index: 400; }
+
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+	}
+.lvml {
+	behavior: url(#default#VML);
+	display: inline-block;
+	position: absolute;
+	}
+
+
+/* control positioning */
+
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	}
+.leaflet-top {
+	top: 0;
+	}
+.leaflet-right {
+	right: 0;
+	}
+.leaflet-bottom {
+	bottom: 0;
+	}
+.leaflet-left {
+	left: 0;
+	}
+.leaflet-control {
+	float: left;
+	clear: both;
+	}
+.leaflet-right .leaflet-control {
+	float: right;
+	}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+	}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+	}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+	}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+	}
+
+
+/* zoom and fade animations */
+
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+	}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+	}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+	}
+svg.leaflet-zoom-animated {
+	will-change: transform;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+	}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+	}
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+	}
+
+
+/* cursors */
+
+.leaflet-interactive {
+	cursor: pointer;
+	}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+	}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+	}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+	}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+	}
+
+/* marker & overlays interactivity */
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+	}
+
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+
+/* visual tweaks */
+
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+	}
+.leaflet-container a {
+	color: #0078A8;
+	}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+	}
+
+
+/* general typography */
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	}
+
+
+/* general toolbar styles */
+
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+	}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+	}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+	}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+	}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+	}
+
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	}
+
+/* zoom control */
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+	}
+
+
+/* layers control */
+
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+	}
+.leaflet-control-layers-toggle {
+	background-image: url(images/layers.png);
+	width: 36px;
+	height: 36px;
+	}
+.leaflet-retina .leaflet-control-layers-toggle {
+	background-image: url(images/layers-2x.png);
+	background-size: 26px 26px;
+	}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+	}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+	}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+	}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+	}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+	}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+	}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+	}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+	}
+
+/* Default icon URLs */
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+	background-image: url(images/marker-icon.png);
+	}
+
+
+/* attribution and scale controls */
+
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+	}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+	}
+.leaflet-control-attribution a {
+	text-decoration: none;
+	}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+	}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+	}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+	}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+	}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+	}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+	}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+	}
+
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+	}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+	}
+
+
+/* popup */
+
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+	}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+	}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+	}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+	}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+	}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+
+	margin: -10px auto 0;
+	pointer-events: auto;
+
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+	}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+	}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+	}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+	}
+.leaflet-popup-scrolled {
+	overflow: auto;
+	}
+
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+	}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+	}
+
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+	}
+
+
+/* div icon */
+
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+	}
+
+
+/* Tooltip */
+/* Base styles for the element that has a tooltip */
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+	}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+	}
+
+/* Directions */
+
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
+}
+.leaflet-tooltip-top {
+	margin-top: -6px;
+}
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+	}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+	}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+	}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+	}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+	}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+	}
+
+/* Printing */
+
+@media print {
+	/* Prevent printers from removing background-images of controls. */
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		}
+	}
+</style>
+<style>
+/* VOICE: app de campo, clara y directa, como un panel de salida de bike park
+   IDEA: el mapa del parque como interfaz; todo se toca sobre el trazado
+   PICTURE: los trazados reales de Gran Corta coloreados por dificultad
+   COLOUR and TYPE: azul marino de marca, verde menta Guiana, naranja de acción; Space Grotesk + Inter
+   LAYOUT: app de móvil centrada, cabecera navegador fija arriba y barra de navegación abajo */
+:root{color-scheme:light dark;--hh:96px;--navy:#0E2E44;--mint:#79FCB0;--green:#17714A;--orange:#E9922C;--blue:#1F6FD1;--red:#D23B2E;
+--bg:light-dark(#F4F6F3,#0b1620);--card:light-dark(#FFFFFF,#132634);--ink:light-dark(#18232B,#E8EEF2);--muted:light-dark(#52606B,#9FB1BE);--line:light-dark(#DDE3DD,#24394A);--map:light-dark(#E3E8E2,#0F202C)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:light-dark(#D9DED8,#060d13);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+.app{max-width:480px;margin:0 auto;min-height:100%;background:var(--bg);display:flex;flex-direction:column;position:relative}
+h1,h2,h3{font-family:"Space Grotesk",Inter,sans-serif;margin:0;line-height:1.1;text-wrap:balance}
+h1{font-size:30px}h2{font-size:21px}h3{font-size:17px}
+a{color:var(--green)}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+/* cabecera navegador */
+.nav{position:sticky;top:0;z-index:1000;background:var(--navy);color:#fff;display:grid;grid-template-columns:64px minmax(0,1fr) 76px;gap:8px;align-items:center;padding:10px 12px;height:var(--hh);transition:height .25s}
+.app.navmode{--hh:184px}
+.turn{display:none;align-items:center;gap:12px;justify-content:center}
+.app.navmode .turn{display:flex}
+.app.navmode .car{height:auto;padding-top:4px}
+.ctr{display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0}
+.turn svg{flex:none;transition:transform .3s}
+.turn b{display:block;font:700 26px "Space Grotesk",sans-serif;line-height:1}
+.turn span{font-size:13px;color:#CFE0EA}
+.swipehint{position:fixed;top:50%;z-index:1200;width:44px;height:44px;margin-top:-22px;border-radius:22px;background:var(--navy);color:#fff;display:none;place-items:center;font-size:22px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.compass{display:flex;flex-direction:column;align-items:center;font-size:11px;color:#CFE0EA;gap:2px}
+.car{background:none;border:0;color:#fff;height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+.car .t1{font:700 15px "Space Grotesk",sans-serif;letter-spacing:.5px;display:flex;gap:6px;align-items:center}
+.car .t2{font-size:12px;color:#CFE0EA}
+.dots{display:flex;gap:5px}.dots i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.35)}.dots i.on{background:#fff}
+.alt{text-align:center;font-size:11px;color:#CFE0EA}.alt b{display:block;font:700 17px "Space Grotesk",sans-serif;color:#fff}
+/* vistas */
+main{flex:1;padding-bottom:84px}
+.view{display:none}.view.on{display:block}
+.pad{padding:18px 16px}
+.hero{background:var(--navy);color:#fff;padding:6px 16px 22px;display:flex;flex-direction:column;gap:12px}
+.hero p{margin:0;color:#D5E2EA}
+.chip{align-self:flex-start;border:1px solid #fff;border-radius:18px;padding:6px 12px;font-size:13px;font-weight:600;color:#fff;background:none}
+.btns{display:flex;gap:10px}
+.b{flex:1;min-height:48px;border-radius:12px;border:0;font-weight:700;display:flex;align-items:center;justify-content:center;text-decoration:none;padding:0 12px;text-align:center}
+.b.or{background:var(--orange);color:#10202B}.b.gr{background:var(--green);color:#fff}.b.ol{background:none;border:1.5px solid currentColor;color:inherit}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;gap:12px;color:inherit;text-decoration:none;align-items:center}
+.list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.st{font-size:12px;font-weight:700;color:light-dark(#1F6B2E,#8FD19E)}.st.off{color:var(--muted)}
+.bar{width:6px;align-self:stretch;border-radius:3px;flex:none}
+.meta{font-size:13px;color:var(--muted)}
+.thumb{width:84px;height:84px;border-radius:10px;flex:none;display:grid;place-items:center;background:var(--map)}
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;text-align:center;margin-top:12px}
+.counts div{border-radius:10px;padding:8px 0;background:var(--card);border:1px solid var(--line);font-size:12px}.counts b{display:block;font-size:19px}
+.tip{background:light-dark(#E7F3E9,#123426);border-radius:12px;padding:12px 14px;margin-top:12px;font-size:14px}
+.warn{background:light-dark(#FFF4E5,#3a2a12);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:8px}
+/* mapa */
+#map{height:calc(100vh - var(--hh) - 76px);min-height:420px;background:var(--map)}
+.leaflet-container{background:var(--map);font:inherit}
+.mapbar{position:absolute;left:10px;right:10px;top:calc(var(--hh) + 10px);z-index:900;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));background:var(--card);border-radius:12px;padding:4px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.mapbar button{height:40px;border:0;border-radius:9px;background:none;color:var(--ink);font-weight:700}
+.mapbar button.on{background:var(--navy);color:#fff}
+.sheet{position:fixed;left:50%;transform:translateX(-50%);width:min(480px,100%);bottom:76px;z-index:950;background:var(--card);border-radius:18px 18px 0 0;box-shadow:0 -3px 12px rgba(0,0,0,.18);padding:12px 16px 14px;display:none;flex-direction:column;gap:10px}
+.sheet.on{display:flex}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;color:#fff;font-size:11px;font-weight:700}
+/* ficha */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;text-align:center;margin:12px 0}
+.stats b{display:block;font-size:16px}.stats span{font-size:12px;color:var(--muted)}
+.prof{width:100%;height:110px;display:block}
+.video{height:190px;background:#12354D;color:#D5E2EA;display:grid;place-items:center;text-align:center;font-size:14px}
+/* barra inferior */
+.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(480px,100%);height:76px;z-index:1000;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;color:var(--muted);text-decoration:none}
+.tabs a.on{color:var(--green);font-weight:700}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:92px;z-index:1100;background:var(--navy);color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;display:none;max-width:90%}
+.small{font-size:13px;color:var(--muted)}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px 0 4px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px}
+.backbar{position:sticky;top:96px;z-index:990;background:var(--bg);border-bottom:1px solid var(--line);padding:0 8px}
+.gal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}
+.gal div,.gal img{aspect-ratio:1;border-radius:10px;background:var(--map);object-fit:cover;width:100%;display:grid;place-items:center;font-size:12px;color:var(--muted);text-align:center;padding:4px}
+.add{display:flex;align-items:center;justify-content:center;min-height:44px;border:1.5px dashed var(--muted);border-radius:12px;margin-top:8px;font-weight:600;font-size:14px;cursor:pointer}
+.add input{position:absolute;opacity:0;width:1px;height:1px}
+.navbanner{position:absolute;left:10px;right:10px;top:calc(var(--hh) + 10px);z-index:960;background:var(--green);color:#fff;border-radius:12px;padding:8px 8px 8px 14px;display:none;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.navbanner.on{display:flex}.navbanner span{flex:1}
+.navbanner button{min-height:40px;border:0;border-radius:9px;background:#fff;color:var(--green);font-weight:700;padding:0 12px}
+.search{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border-radius:12px;background:#fff;color:#52606B;font-size:15px;border:0;width:100%;text-align:left}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;min-height:34px;padding:0 12px;border-radius:17px;border:1px solid #fff;background:none;color:#fff;font-size:13px;font-weight:600}
+.chips button.on{background:var(--mint);border-color:var(--mint);color:var(--navy);font-weight:700}
+.bigmap{position:relative;display:block;height:380px;background:var(--map);overflow:hidden}
+.bigmap .pin{position:absolute;border:0;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.terr{display:flex;gap:12px;overflow-x:auto;padding:0 16px 4px;scrollbar-width:none}.terr::-webkit-scrollbar{display:none}
+.tcard{flex:0 0 220px;border-radius:14px;overflow:hidden;background:var(--card);border:1px solid var(--line);color:inherit;text-decoration:none}
+.tcard .im{height:110px;background:var(--map);padding:10px}.tcard .bd{padding:12px;display:flex;flex-direction:column;gap:2px}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;color:#fff;background:var(--green)}.badge.off{background:#7D8891}
+.vals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.vals div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:12px;color:var(--muted)}.vals b{display:block;font-size:13px;color:var(--ink);margin:6px 0 2px}
+.steps{counter-reset:s;display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.steps div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 12px 12px 48px;position:relative;font-size:14px}
+.steps div::before{counter-increment:s;content:counter(s);position:absolute;left:12px;top:12px;width:26px;height:26px;border-radius:13px;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+.steps b{display:block;font-size:15px;margin-bottom:2px}
+.navbanner.ready{background:var(--orange);color:#10202B}.navbanner.ready button{color:#10202B}
+@media (prefers-reduced-motion:no-preference){.sheet.on{animation:up .2s ease-out}@keyframes up{from{transform:translate(-50%,20px);opacity:.4}}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="nav" aria-label="Cabecera navegador">
+  <div class="compass"><svg width="54" height="54" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#fff" stroke-width="2"/><text x="32" y="13" text-anchor="middle" font-size="9" font-weight="700" fill="#E9922C">N</text><text x="54" y="35" text-anchor="middle" font-size="8" fill="#B8CCD8">E</text><text x="32" y="58" text-anchor="middle" font-size="8" fill="#B8CCD8">S</text><text x="10" y="35" text-anchor="middle" font-size="8" fill="#B8CCD8">O</text><path d="M32 16 L37 32 L32 30 L27 32 Z" fill="#E9922C"/><path d="M32 48 L37 32 L32 34 L27 32 Z" fill="#fff" fill-opacity=".5"/></svg><span>Brújula</span></div>
+  <div class="ctr"><div class="turn" id="turn" role="status" aria-live="polite"><svg id="tarr" width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6 L52 30 H40 V58 H24 V30 H12 Z" fill="#79FCB0"/></svg><div><b id="tdist">—</b><span id="ttxt">Sigue recto</span></div></div><button class="car" id="car" aria-label="Siguiente información"><span class="t1" id="c1"></span><span class="t2" id="c2"></span><span class="dots" id="dots"><i></i><i></i><i></i></span></button></div>
+  <div class="alt">Altitud<b id="altv">—</b><span id="alts">en la salida</span></div>
+</header>
+
+<div class="swipehint" id="swh" aria-hidden="true"></div>
+<main>
+<section class="view" id="v-explorer">
+  <div class="hero" style="padding-bottom:14px">
+    <h1 style="font-size:22px">Explora el territorio</h1>
+    <button class="search" type="button" data-toast="Demo: el buscador llegará con más destinos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#52606B" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>¿Dónde quieres rodar?</button>
+    <div class="chips" role="group" aria-label="Tipo de bici"><button type="button" class="on">Todo</button><button type="button">BTT</button><button type="button">Gravel</button><button type="button">Carretera</button></div>
+  </div>
+  <div class="bigmap" aria-label="Mapa de territorios">
+    <svg width="100%" height="380" viewBox="0 0 390 380" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M60 60 L200 40 L330 70 L360 160 L320 290 L210 340 L90 320 L40 220Z" fill="light-dark(#D6DDD4,#16303f)" style="fill:color-mix(in srgb,var(--line) 70%,var(--map))" stroke="var(--line)" stroke-width="2"/><circle cx="120" cy="110" r="14" fill="#17714A"/><circle cx="120" cy="110" r="26" fill="none" stroke="#17714A" stroke-width="2" opacity=".35"/><circle cx="210" cy="170" r="11" fill="#9AA3AA"/></svg>
+    <a class="pin" href="#inicio" style="left:88px;top:62px;text-decoration:none">Ride Bierzo ›</a>
+    <button class="pin" type="button" style="left:226px;top:150px;font-weight:600;color:var(--muted)" data-toast="Campos Cycling llegará próximamente">Campos Cycling · pronto</button>
+    <a class="pin" href="#inicio" style="left:12px;bottom:12px;font-weight:600;text-decoration:none">Toca un territorio para entrar</a>
+  </div>
+  <div style="padding:20px 0 0">
+    <h2 style="padding:0 16px;margin-bottom:12px">Territorios</h2>
+    <div class="terr">
+      <a class="tcard" href="#inicio"><div class="im"><span class="badge">Activo</span></div><div class="bd"><h3>Ride Bierzo</h3><span class="meta">El Bierzo · León</span><span class="meta">BTT · 4 destinos</span></div></a>
+      <div class="tcard"><div class="im"><span class="badge off">Próximamente</span></div><div class="bd"><h3>Campos Cycling</h3><span class="meta">Tierra de Campos</span><span class="meta">Cicloturismo · rutas guiadas</span></div></div>
+      <div class="tcard" style="border-style:dashed"><div class="im" style="display:grid;place-items:center;font-size:30px;color:var(--muted)">+</div><div class="bd"><h3>Tu territorio</h3><span class="meta">¿Gestionas un destino? Súmate</span></div></div>
+    </div>
+  </div>
+  <div class="pad">
+    <h2>Qué encontrarás</h2>
+    <div class="vals"><div><b>Senderos clasificados</b>Dificultad real, escala ITRS</div><div><b>Navegación guiada</b>Avisos solo cuando importan</div><div><b>Apoyas el territorio</b>Tu visita mantiene los senderos</div></div>
+    <div class="btns" style="margin-top:14px"><a class="b ol" href="#guia">Guía de uso de la app</a></div>
+    <div class="card" style="margin-top:18px;flex-direction:column;align-items:stretch;background:light-dark(#FFF4E6,#3a2a12)"><b>Apoya los senderos</b><span class="small">Las donaciones se destinan al mantenimiento de los senderos de cada territorio.</span><button class="b or" type="button" style="flex:none;align-self:flex-start;min-height:40px" data-toast="Demo: el pago se activará en modo prueba">Donar</button><span class="small" style="font-size:11px">Una iniciativa de Guiana Project</span></div>
+  </div>
+</section>
+
+<section class="view" id="v-guia">
+  <div class="pad">
+    <h1>Guía de uso de la app</h1>
+    <p class="small" style="margin:6px 0 0">Todo lo que necesitas para tu primera visita, en un minuto.</p>
+    <h2 style="margin-top:20px">Colores de dificultad</h2>
+    <div class="list">
+      <div class="card"><span class="bar" style="background:#2E8B3D"></span><span><b>Verde</b> · fácil, para empezar</span></div>
+      <div class="card"><span class="bar" style="background:#1F6FD1"></span><span><b>Azul</b> · intermedio</span></div>
+      <div class="card"><span class="bar" style="background:#D23B2E"></span><span><b>Rojo</b> · difícil, saltos grandes</span></div>
+      <div class="card"><span class="bar" style="background:#1B1B1B"></span><span><b>Negro</b> · experto</span></div>
+      <div class="card"><span class="bar" style="background:repeating-linear-gradient(180deg,#1F6FD1 0 6px,transparent 6px 10px)"></span><span><b>Línea discontinua</b> · sendero de subida</span></div>
+    </div>
+    <p class="small">Cada sendero tendrá también su clasificación ITRS, la escala internacional de dificultad.</p>
+    <h2 style="margin-top:20px">Cómo usar la app</h2>
+    <div class="steps">
+      <div><b>Elige destino</b>Desde el mapa o la lista de destinos.</div>
+      <div><b>Mira trails o rutas</b>En el mapa puedes ver senderos sueltos o rutas sugeridas que los encadenan.</div>
+      <div><b>Abre la ficha</b>Longitud, desnivel, perfil, vídeo y rutas que lo usan.</div>
+      <div><b>Ve a la salida</b>Con "Ir a la salida" llegas al inicio del trail.</div>
+      <div><b>Empieza a navegar</b>Al llegar aparece "Empezar navegación". La cabecera te guía y te avisa solo cuando importa.</div>
+    </div>
+    <div class="btns" style="margin-top:18px"><a class="b gr" href="#inicio">Ir a Ride Bierzo</a></div>
+  </div>
+</section>
+
+<section class="view" id="v-inicio">
+  <div class="hero">
+    <button class="chip" id="chipdest" type="button">Ride Bierzo · El Bierzo ▾</button>
+    <h1>Bicicleta de montaña en El Bierzo</h1>
+    <p>Destinos, senderos y rutas de la comarca, con su estado actualizado.</p>
+    <div class="btns"><a class="b or" href="#mapa">Ver el mapa</a><a class="b ol" href="#guia">Guía de uso de la app</a></div>
+  </div>
+  <div class="pad">
+    <h2>Destinos</h2>
+    <div class="list" id="destinos"></div>
+  </div>
+</section>
+
+<section class="view" id="v-gran-corta">
+  <div class="pad">
+    <p class="small" style="margin:0">Ride Bierzo · Fabero</p>
+    <h1>Gran Corta Gravity Park</h1>
+    <p style="margin:8px 0 0"><span class="st">● Abierto</span> <span class="small">· estado de ejemplo</span></p>
+    <div class="counts" id="counts"></div>
+    <div class="tip"><b>¿Primera vez aquí?</b> Empieza por El Aprendiz y sigue la progresión de saltos: El Aprendiz → El Crisol → Next Level.</div>
+    <div class="btns" style="margin-top:12px"><a class="b gr" href="#mapa">Abrir el mapa</a></div>
+    <h2 style="margin-top:22px">Consejos en Gran Corta</h2>
+    <div class="list">
+      <div class="card">Casco siempre. Protecciones recomendadas en los trails rojos.</div>
+      <div class="card">Zonas de saltos: recorre o mira el trail antes de saltar.</div>
+      <div class="card">No te pares en las zonas de recepción de los saltos.</div>
+      <div class="card">Con viento fuerte, evita los saltos grandes.</div>
+    </div>
+    <h2 style="margin-top:22px">Trails</h2>
+    <div class="list" id="trails"></div>
+    <h2 style="margin-top:22px">Fotos</h2>
+    <div class="gal" id="galdest"><div>Foto del parque</div><div>Foto de la mina</div><div>Foto en acción</div></div>
+    <label class="add">+ Añadir fotos<input type="file" accept="image/*" multiple data-gal="galdest"></label>
+    <h2 style="margin-top:22px">Apoya Gran Corta</h2>
+    <div class="card" style="flex-direction:column;align-items:stretch">
+      <span class="small">Campaña de ejemplo: mantenimiento de drenajes</span>
+      <div style="height:10px;border-radius:5px;background:var(--line);overflow:hidden"><div style="width:40%;height:100%;background:var(--green)"></div></div>
+      <span class="small">El 100 % se queda en Gran Corta. Pago con tarjeta o Bizum.</span>
+      <button class="b gr" type="button" data-toast="Demo: el pago se activará en modo prueba">Donar</button>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="v-mapa">
+  <div class="mapbar" role="group" aria-label="Ver trails o rutas"><button type="button" id="mT" class="on">Trails</button><button type="button" id="mR">Rutas sugeridas</button></div>
+  <div class="navbanner" id="navb" role="status"><span id="navt">Navegación simulada</span><button type="button" id="navgo" hidden>Empezar navegación</button><button type="button" id="navx">Salir</button></div>
+  <div id="map" aria-label="Mapa de Gran Corta"></div>
+</section>
+
+<section class="view" id="v-trail">
+  <div class="video"><div>▶<br>Vídeo onboard · próximamente</div></div>
+  <div class="pad" id="ficha"></div>
+</section>
+</main>
+
+<div class="sheet" id="sheet" role="dialog" aria-label="Detalle"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<nav class="tabs" aria-label="Navegación principal">
+  <a href="#mapa" data-t="mapa"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>Mapa</a>
+  <a href="#explorer" data-t="inicio"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 20 10 8l4 6 3-4 4 10z"/></svg>Destinos</a>
+  <a href="#gran-corta" data-t="gran-corta"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Trails</a>
+  <a href="#info" data-t="info"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>Info</a>
+</nav>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+{
+const T=[{"id":"el-aprendiz","nombre":"El Aprendiz","dificultad":"azul","tipo":"flow trail de iniciación con saltos","sentido":"bajada","distancia_km":1.4,"desnivel_negativo_m":87,"desnivel_positivo_m":null,"tiempo_medio":"00:02:17","elementos":["peraltes","saltos"],"descripcion":"Flow trail azul de iniciación, ancho, muy fluido y con poca pendiente. Su carácter general se aproxima al verde, pero incorpora varios saltos de dificultad azul para iniciarse en la técnica de salto. Paso previo a El Crisol.","aviso":"Reconocer los saltos en una primera pasada y comprobar el viento: las rachas laterales alteran la trayectoria en el salto.","acceso":null,"trailforks_url":"https://www.trailforks.com/trails/el-aprendiz-gran-corta/","c":[[42.75844,-6.58191,1066],[42.75846,-6.58189,1066],[42.75871,-6.58179,1066],[42.75892,-6.58157,1066],[42.7591,-6.58156,1066],[42.75912,-6.58156,1066],[42.75913,-6.58155,1066],[42.75934,-6.58145,1066],[42.75939,-6.58142,1066],[42.75953,-6.58133,1066],[42.75955,-6.58133,1066],[42.75966,-6.58136,1066],[42.7597,-6.58137,1066],[42.75979,-6.58163,1064],[42.75979,-6.5818,1064],[42.75977,-6.5819,1060],[42.75979,-6.58214,1057],[42.75983,-6.58236,1057],[42.75984,-6.58257,1056],[42.75977,-6.58312,1055],[42.75982,-6.58344,1052],[42.75981,-6.58374,1049],[42.75974,-6.58395,1047],[42.75965,-6.58431,1043],[42.75965,-6.58462,1041],[42.75962,-6.5849,1038],[42.75956,-6.58515,1043],[42.7596,-6.58523,1035],[42.75972,-6.58516,1035],[42.75994,-6.58474,1036],[42.76018,-6.58458,1034],[42.76041,-6.58451,1034],[42.76054,-6.58444,1031],[42.76062,-6.58433,1031],[42.76068,-6.58418,1033],[42.76076,-6.5841,1030],[42.76079,-6.58423,1030],[42.76078,-6.5844,1027],[42.76061,-6.58465,1028],[42.76061,-6.58478,1028],[42.76057,-6.58488,1026],[42.76048,-6.58494,1026],[42.7604,-6.58512,1030],[42.76037,-6.58524,1028],[42.76039,-6.58549,1027],[42.76036,-6.58585,1024],[42.7603,-6.58626,1021],[42.76022,-6.5871,1020],[42.76011,-6.58789,1012],[42.76017,-6.58806,1010],[42.76027,-6.58815,1010],[42.76045,-6.58827,1008],[42.76059,-6.58814,1013],[42.76084,-6.58768,1012],[42.7609,-6.58759,1011],[42.76093,-6.58746,1011],[42.76098,-6.58741,1006],[42.76104,-6.58743,1006],[42.76112,-6.58759,1006],[42.76109,-6.5881,1004],[42.7611,-6.5884,999],[42.76107,-6.5886,996],[42.76106,-6.58883,993],[42.76109,-6.58935,988],[42.76104,-6.5896,984],[42.76107,-6.58977,984],[42.76115,-6.58975,984],[42.76125,-6.58942,983],[42.76143,-6.58909,985],[42.76138,-6.58912,985],[42.76154,-6.58884,982],[42.76162,-6.58844,985],[42.76179,-6.58824,985],[42.76204,-6.58819,977],[42.76225,-6.58793,975],[42.76236,-6.58792,975]]},{"id":"el-crisol","nombre":"El Crisol","dificultad":"azul","tipo":"línea de saltos (construida a máquina)","sentido":"bajada","distancia_km":0.944,"desnivel_negativo_m":59,"desnivel_positivo_m":2,"tiempo_medio":"00:06:00","elementos":["peraltes","drops","saltos","pump track"],"descripcion":"Línea azul de saltos de casi un kilómetro desde el aparcamiento superior: mesetas grandes y curvas peraltadas para trabajar la técnica de salto de forma progresiva. Escalón intermedio de la progresión de saltos. Termina enlazando con la subida El Alquimista.","aviso":"Clasificada azul, pero por tamaño de elementos y velocidad está cerca del rojo. Reconocer antes y aumentar la velocidad poco a poco.","acceso":null,"trailforks_url":"https://www.trailforks.com/trails/el-crisol-gran-corta/","c":[[42.76123,-6.59902,946],[42.76134,-6.59914,944],[42.76141,-6.59925,944],[42.76165,-6.59949,944],[42.76179,-6.59955,944],[42.76213,-6.59938,938],[42.76235,-6.59924,940],[42.76248,-6.5991,937],[42.76255,-6.59897,939],[42.7625,-6.59892,939],[42.76232,-6.59904,940],[42.7623,-6.59902,942],[42.7623,-6.59897,942],[42.76234,-6.59891,942],[42.76249,-6.5988,939],[42.76262,-6.59875,939],[42.76275,-6.59867,938],[42.76283,-6.59865,938],[42.76295,-6.59868,939],[42.76306,-6.59875,933],[42.76318,-6.59877,933],[42.76371,-6.59872,929],[42.76405,-6.59875,917],[42.76432,-6.59866,918],[42.76444,-6.59855,918],[42.76452,-6.59862,918],[42.76432,-6.59894,913],[42.76422,-6.59907,910],[42.76407,-6.59922,910],[42.76401,-6.59926,914],[42.7639,-6.59928,914],[42.76377,-6.59935,909],[42.76381,-6.59938,909],[42.76405,-6.5994,903],[42.76444,-6.59946,900],[42.76461,-6.59944,899],[42.76486,-6.59932,899],[42.76501,-6.59922,900],[42.76537,-6.59886,900],[42.76537,-6.59895,900],[42.76518,-6.59927,896],[42.76512,-6.59946,897],[42.7651,-6.59958,897],[42.76502,-6.59971,893],[42.7647,-6.60001,890],[42.76465,-6.60013,890],[42.76461,-6.60036,887],[42.76449,-6.60053,882]]},{"id":"next-level","nombre":"Next Level","dificultad":"rojo","tipo":"línea de saltos","sentido":"bajada","distancia_km":1.2,"desnivel_negativo_m":90,"desnivel_positivo_m":null,"tiempo_medio":"00:04:22","elementos":["peraltes","drops","saltos"],"descripcion":"Línea roja de saltos, siguiente escalón de la progresión. Empieza con un drop y alterna steep downs y steep ups que enlazan con diferentes saltos.","aviso":"Haber completado con control El Crisol. Reconocer el trazado y comprobar el viento antes de bajar.","acceso":null,"trailforks_url":"https://www.trailforks.com/trails/next-level-gran-corta/","c":[[42.7597,-6.58137,1066],[42.75977,-6.5813,1066],[42.75976,-6.58107,1065],[42.75966,-6.58072,1063],[42.75963,-6.58048,1061],[42.75964,-6.58035,1060],[42.75967,-6.58034,1060],[42.75975,-6.58038,1060],[42.75983,-6.58039,1060],[42.76004,-6.5805,1061],[42.7602,-6.58064,1059],[42.76042,-6.58101,1046],[42.76048,-6.5812,1046],[42.76064,-6.58151,1046],[42.76086,-6.58182,1041],[42.761,-6.58199,1037],[42.76117,-6.58226,1037],[42.76119,-6.58257,1035],[42.76114,-6.58281,1034],[42.76116,-6.58305,1035],[42.76113,-6.5835,1032],[42.76098,-6.58387,1028],[42.76106,-6.58392,1028],[42.76117,-6.58384,1028],[42.76141,-6.58359,1027],[42.76146,-6.5835,1027],[42.76148,-6.58333,1030],[42.76154,-6.58322,1026],[42.76179,-6.58306,1026],[42.76191,-6.58284,1021],[42.76199,-6.58257,1022],[42.76205,-6.58219,1023],[42.76206,-6.58197,1022],[42.7621,-6.58192,1015],[42.76216,-6.58196,1015],[42.76217,-6.58215,1017],[42.76222,-6.58239,1017],[42.7623,-6.58253,1017],[42.76235,-6.58277,1017],[42.7625,-6.5833,1009],[42.76252,-6.58335,1009],[42.76257,-6.58339,1009],[42.76265,-6.58371,1003],[42.76259,-6.58407,1006],[42.76256,-6.58412,1006],[42.76257,-6.58452,1005],[42.76252,-6.58479,1003],[42.76239,-6.58519,997],[42.76237,-6.58545,993],[42.76231,-6.58564,995],[42.76228,-6.5859,993],[42.7622,-6.58608,990],[42.76216,-6.58624,990],[42.76219,-6.58639,987],[42.76226,-6.58654,984],[42.76234,-6.58666,984],[42.76249,-6.58681,982],[42.76253,-6.58688,982],[42.76251,-6.58724,978],[42.76237,-6.58762,975],[42.76235,-6.58783,975],[42.76236,-6.58792,975]]},{"id":"trilobite","nombre":"Trilobite","dificultad":"azul","tipo":"flow trail construido a máquina, tres secciones","sentido":"bajada","distancia_km":1.6,"desnivel_negativo_m":97,"desnivel_positivo_m":4,"tiempo_medio":"00:07:25","elementos":["peraltes","saltos"],"descripcion":"Trail construido a máquina en tres secciones: primero baja pendiente con curvas peraltadas encadenadas; después más pendiente con peraltes y cambios de rasante; el tramo final, más llano, con mesetas, termina en el aparcamiento inferior.","aviso":null,"acceso":"Por la subida El Alquimista, o desde Otero de Naraguantes por pista que enlaza con la del parking al pueblo, paralela al tramo final (allí hay una fuente).","trailforks_url":"https://www.trailforks.com/trails/trilobite-gran-corta/","c":[[42.77039,-6.60084,918],[42.77045,-6.60086,919],[42.77058,-6.60086,919],[42.7708,-6.60085,921],[42.77088,-6.60087,921],[42.77099,-6.60087,921],[42.77102,-6.60085,921],[42.77109,-6.60088,921],[42.77112,-6.60086,921],[42.77137,-6.60086,920],[42.77156,-6.60091,919],[42.77165,-6.60091,919],[42.77189,-6.60099,917],[42.77205,-6.60101,917],[42.77257,-6.60115,916],[42.77266,-6.60122,915],[42.77276,-6.60126,911],[42.77278,-6.60135,911],[42.77276,-6.60144,911],[42.77268,-6.60149,911],[42.77271,-6.60152,911],[42.77279,-6.60148,911],[42.77286,-6.60142,911],[42.77288,-6.60152,911],[42.77286,-6.60161,905],[42.77279,-6.60159,905],[42.77278,-6.60167,905],[42.77284,-6.6017,905],[42.77302,-6.60151,908],[42.77306,-6.60156,902],[42.77301,-6.60167,902],[42.77282,-6.60179,905],[42.7728,-6.60187,898],[42.77285,-6.60192,898],[42.77293,-6.60185,895],[42.77319,-6.60168,902],[42.77324,-6.60174,893],[42.7731,-6.6019,895],[42.77302,-6.60196,895],[42.77296,-6.602,895],[42.77288,-6.602,898],[42.77287,-6.60212,892],[42.77308,-6.60205,895],[42.77325,-6.60207,888],[42.77334,-6.60204,888],[42.77339,-6.60198,888],[42.77341,-6.60207,888],[42.77336,-6.60218,883],[42.77319,-6.60227,888],[42.77312,-6.60234,888],[42.77304,-6.60235,888],[42.77298,-6.60241,882],[42.77296,-6.60247,882],[42.77305,-6.60254,882],[42.77316,-6.60249,882],[42.77322,-6.60243,878],[42.77351,-6.60252,874],[42.77375,-6.60241,868],[42.77393,-6.60238,868],[42.77402,-6.60233,871],[42.77405,-6.60223,868],[42.7741,-6.60219,868],[42.77413,-6.60232,868],[42.77399,-6.60264,864],[42.7739,-6.60275,864],[42.77397,-6.60276,864],[42.77404,-6.60264,857],[42.77407,-6.60255,862],[42.77414,-6.6025,862],[42.77419,-6.6024,862],[42.7743,-6.60196,870],[42.77443,-6.60194,863],[42.77449,-6.60189,863],[42.77456,-6.60188,863],[42.77463,-6.60184,852],[42.77472,-6.60182,852],[42.77478,-6.60178,859],[42.77481,-6.6017,859],[42.77485,-6.60175,859],[42.77479,-6.6019,852],[42.77473,-6.60198,852],[42.77476,-6.60204,852],[42.77486,-6.60198,852],[42.77493,-6.6019,846],[42.77506,-6.60152,854],[42.7751,-6.60156,850],[42.77513,-6.60173,850],[42.77511,-6.60185,846],[42.77507,-6.60191,846],[42.77516,-6.60191,840],[42.77524,-6.60179,845],[42.77527,-6.60168,845],[42.77536,-6.60153,845],[42.77536,-6.60143,847],[42.7754,-6.60135,847],[42.77558,-6.60126,840],[42.77566,-6.60119,840],[42.77572,-6.60108,834],[42.77598,-6.60092,833],[42.77608,-6.60082,833],[42.77613,-6.60068,837],[42.77633,-6.60043,831],[42.7764,-6.60026,833],[42.77649,-6.60011,836],[42.77653,-6.59994,833],[42.77658,-6.59988,833],[42.77672,-6.59979,835],[42.77683,-6.59962,832],[42.77733,-6.59935,830],[42.77739,-6.5993,828],[42.7775,-6.59914,828],[42.77768,-6.59907,824],[42.77776,-6.59902,828],[42.77784,-6.59899,828],[42.77789,-6.59899,828],[42.7781,-6.59907,823],[42.77817,-6.59906,823]]},{"id":"el-alquimista","nombre":"El Alquimista","dificultad":"azul","tipo":"subida","sentido":"solo subida","distancia_km":1.2,"desnivel_negativo_m":6,"desnivel_positivo_m":38,"tiempo_medio":"00:04:57","elementos":["peraltes"],"descripcion":"Subida fluida con pendientes suaves y zonas de aceleración, pensada para hacer el ascenso dinámico. Da acceso a la bajada Trilobite, que lleva al parking inferior.","aviso":null,"acceso":null,"trailforks_url":"https://www.trailforks.com/trails/el-alquimista-gran-corta/","c":[[42.76454,-6.60069,882],[42.76459,-6.60093,886],[42.76467,-6.60111,888],[42.76467,-6.60131,888],[42.7647,-6.60142,888],[42.76472,-6.60162,888],[42.76476,-6.60169,888],[42.7648,-6.60171,888],[42.76492,-6.60231,894],[42.76496,-6.6023,894],[42.76497,-6.60226,894],[42.76493,-6.60207,895],[42.76494,-6.60198,895],[42.76496,-6.60194,895],[42.76499,-6.60199,895],[42.76498,-6.60212,894],[42.76504,-6.60229,894],[42.7651,-6.60239,891],[42.76519,-6.60263,901],[42.76541,-6.60296,891],[42.76552,-6.60325,895],[42.76559,-6.60333,895],[42.76562,-6.60332,895],[42.76578,-6.60352,895],[42.76592,-6.60363,895],[42.76606,-6.60368,898],[42.76612,-6.60375,891],[42.76626,-6.60377,895],[42.76639,-6.60376,895],[42.76653,-6.6038,896],[42.76661,-6.60377,896],[42.76676,-6.60378,896],[42.76689,-6.60374,902],[42.76695,-6.60375,896],[42.7671,-6.60366,903],[42.76718,-6.60367,903],[42.76728,-6.60362,903],[42.76739,-6.6036,903],[42.76743,-6.60357,903],[42.76742,-6.60354,903],[42.76728,-6.60354,903],[42.76723,-6.60352,903],[42.76714,-6.60345,909],[42.76709,-6.60343,909],[42.76691,-6.60344,909],[42.76677,-6.6034,908],[42.76672,-6.60337,908],[42.7667,-6.60333,908],[42.76654,-6.60324,908],[42.76643,-6.60314,913],[42.76645,-6.60305,913],[42.76649,-6.60303,913],[42.76661,-6.60307,913],[42.76691,-6.60304,916],[42.76713,-6.60308,914],[42.76734,-6.60304,914],[42.76741,-6.60306,913],[42.76752,-6.60306,913],[42.76767,-6.60297,915],[42.76781,-6.60296,915],[42.76809,-6.60282,919],[42.76822,-6.60268,914],[42.76822,-6.60259,919],[42.76827,-6.60253,919],[42.76834,-6.60248,919],[42.7684,-6.60238,919],[42.76848,-6.60231,919],[42.76858,-6.60227,919],[42.76864,-6.60222,919],[42.76881,-6.60218,915],[42.76891,-6.6021,915],[42.76899,-6.60206,920],[42.76907,-6.60209,914],[42.76919,-6.60202,918],[42.76926,-6.602,918],[42.76932,-6.60201,916],[42.76945,-6.60193,916],[42.76952,-6.60197,916],[42.76959,-6.60198,910],[42.76968,-6.60193,910],[42.76989,-6.60148,914],[42.77001,-6.60131,914],[42.77003,-6.60124,917],[42.77009,-6.60119,917],[42.77037,-6.60103,916],[42.77045,-6.60089,919],[42.77058,-6.60084,919]]}];
+const COL={azul:'#1F6FD1',rojo:'#D23B2E',verde:'#2E8B3D',negro:'#1B1B1B'};
+const ROUTE={id:'parking-superior-inferior',nombre:'Del parking superior al inferior',trails:['el-crisol','el-alquimista','trilobite']};
+const ROUTES=[ROUTE];let routeFocus=null;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const byId=Object.fromEntries(T.map(t=>[t.id,t]));
+const km=v=>v<1?Math.round(v*1000)+' m':String(v).replace('.',',')+' km';
+const min=s=>{if(!s)return '';const[h,m,x]=s.split(':').map(Number);return Math.max(1,Math.round(h*60+m+x/60))+' min'};
+const desn=t=>t.sentido==='solo subida'?'+'+(t.desnivel_positivo_m||0)+' m':'−'+(t.desnivel_negativo_m||0)+' m';
+const hav=(a,b)=>{const R=6371000,r=Math.PI/180,d1=(b[0]-a[0])*r,d2=(b[1]-a[1])*r,x=Math.sin(d1/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(d2/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
+const toast=m=>{const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)};
+const stripe=t=>t.sentido==='solo subida'?`repeating-linear-gradient(180deg,${COL[t.dificultad]} 0 6px,transparent 6px 10px)`:COL[t.dificultad];
+
+/* cabecera: carrusel */
+let slide=0;
+const casco='<svg width="20" height="15" viewBox="0 0 74 56" aria-hidden="true"><path d="M62.9 0.0 L4.3 20.2 L1.0 23.9 L0.0 48.0 L4.5 51.8 L11.9 52.9 L26.0 52.9 L56.0 54.9 L56.9 55.9 L63.6 54.7 L73.9 35.0 L73.9 28.9 L70.0 26.0 L64.9 26.0 L32.2 33.4 L32.2 35.6 L36.5 39.8 L56.8 38.4 L56.8 40.6 L48.6 49.8 L45.4 50.9 L17.9 48.0 L13.9 44.0 L16.0 33.5 L20.3 25.1 L58.5 10.7 L62.8 3.4Z" fill="#79FCB0"/></svg>';
+const BASE=[[casco+'GUIANA EXPLORER','Ride Bierzo · Gran Corta · Abierto'],['Puesta de sol','17:56 en Fabero (dato de ejemplo)'],['Viento en la salida','Semáforo de viento · próximamente']];let slides=BASE.map(x=>x.slice());
+const paintCar=()=>{$('#c1').innerHTML=slides[slide][0];$('#c2').textContent=slides[slide][1];document.querySelectorAll('#dots i').forEach((d,i)=>d.classList.toggle('on',i===slide))};
+$('#car').addEventListener('click',()=>{slide=(slide+1)%3;paintCar()});
+const setAlt=(m,s)=>{$('#altv').textContent=m?Math.round(m).toLocaleString('es-ES')+' m':'—';$('#alts').textContent=s||''};
+
+/* listas */
+const row=t=>`<a class="card" href="#trail-${t.id}"><span class="bar" style="background:${stripe(t)}"></span><span style="flex:1"><h3>${esc(t.nombre)}</h3><span class="meta">${km(t.distancia_km)} · ${desn(t)} · ${esc(t.tipo)}</span></span><span class="st">Abierto</span></a>`;
+$('#trails').innerHTML=T.map(row).join('');
+const cnt=c=>T.filter(t=>t.dificultad===c).length;
+$('#counts').innerHTML=[['verde','Verde'],['azul','Azul'],['rojo','Rojo'],['negro','Negro']].map(([k,l])=>`<div><b style="color:${COL[k]}">${cnt(k)}</b>${l}</div>`).join('');
+const dest=[['Gran Corta Gravity Park','Fabero · bike park en una mina restaurada',T.length+' trails',true],['Galaxy Park','Cueto · Ride Center Puerta de Ancares','11 senderos'],['La Colmena','Ocero · Ride Center Puerta de Ancares','8 senderos'],['Extremo Aquiliano','Montes Aquilianos · Valdueza','Próximamente']];
+$('#destinos').innerHTML=dest.map(([n,s,c,on])=>`<${on?'a href="#gran-corta"':'div'} class="card"><span class="thumb">${on?'<svg width="60" height="60" viewBox="0 0 74 56" aria-hidden="true"><path d="M62.9 0.0 L4.3 20.2 L1.0 23.9 L0.0 48.0 L4.5 51.8 L11.9 52.9 L26.0 52.9 L56.0 54.9 L56.9 55.9 L63.6 54.7 L73.9 35.0 L73.9 28.9 L70.0 26.0 L64.9 26.0 L32.2 33.4 L32.2 35.6 L36.5 39.8 L56.8 38.4 L56.8 40.6 L48.6 49.8 L45.4 50.9 L17.9 48.0 L13.9 44.0 L16.0 33.5 L20.3 25.1 L58.5 10.7 L62.8 3.4Z" fill="#17714A"/></svg>':''}</span><span style="flex:1"><span class="st ${on?'':'off'}">${on?'● Abierto':'Sin datos aún'}</span><h3>${esc(n)}</h3><span class="meta">${esc(s)}<br>${esc(c)}</span></span></${on?'a':'div'}>`).join('');
+document.addEventListener('click',e=>{const c=e.target.closest('.chips button');if(!c)return;c.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===c))});
+$('#chipdest').addEventListener('click',()=>toast('Por ahora Guiana Explorer tiene un destino: Ride Bierzo'));
+document.addEventListener('click',e=>{const b=e.target.closest('[data-toast]');if(b)toast(b.dataset.toast)});
+
+/* perfil */
+const profile=t=>{const c=t.c;let d=[0];for(let i=1;i<c.length;i++)d.push(d[i-1]+hav(c[i-1],c[i]));const e=c.map(p=>p[2]),lo=Math.min(...e),hi=Math.max(...e),L=d[d.length-1]||1,W=340,H=100;
+const pts=c.map((p,i)=>[(d[i]/L*W).toFixed(1),(8+(hi-p[2])/((hi-lo)||1)*(H-24)).toFixed(1)]);const line=pts.map(p=>p.join(' ')).join(' L');
+return `<svg class="prof" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Perfil de ${esc(t.nombre)}: de ${hi} a ${lo} m"><path d="M${line} L${W} ${H} L0 ${H}Z" fill="${COL[t.dificultad]}" fill-opacity=".15"/><path d="M${line}" fill="none" stroke="${COL[t.dificultad]}" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg><div class="small" style="display:flex;justify-content:space-between"><span>${e[0]} m</span><span>${Math.round(L)} m recorridos</span><span>${e[e.length-1]} m</span></div>`};
+
+const ficha=t=>{$('#ficha').innerHTML=`<p class="small" style="margin:0">Gran Corta Gravity Park</p><h1>${esc(t.nombre)}</h1>
+<p style="margin:8px 0 0"><span class="tag" style="background:${COL[t.dificultad]}">${t.dificultad.toUpperCase()}</span> <span class="tag" style="background:#5B6670">ITRS: pendiente</span> <span class="st">● Abierto</span></p>
+<div class="stats"><div><b>${km(t.distancia_km)}</b><span>Longitud</span></div><div><b>${desn(t)}</b><span>Desnivel</span></div><div><b>${min(t.tiempo_medio)}</b><span>Tiempo medio</span></div><div><b>${t.sentido==='solo subida'?'Subida':'Bajada'}</b><span>Sentido</span></div></div>
+${profile(t)}
+${t.aviso?`<div class="warn"><b>Aviso:</b> ${esc(t.aviso)}</div>`:''}
+<h2 style="margin-top:18px">Descripción</h2><p>${esc(t.descripcion)}</p>
+${t.acceso?`<p class="small"><b>Acceso:</b> ${esc(t.acceso)}</p>`:''}
+<p class="small">Elementos: ${esc((t.elementos||[]).join(', '))}</p>
+<div class="btns"><a class="b ol" href="https://www.google.com/maps/dir/?api=1&destination=${t.c[0][0]},${t.c[0][1]}" target="_blank" rel="noopener">Ir a la salida</a><button class="b gr" type="button" data-gps="${t.id}">Navegar con mi GPS</button></div><button class="b ol" type="button" style="margin-top:8px;width:100%;min-height:40px;font-size:14px" data-nav="${t.id}">Simular llegada (sin GPS)</button>
+<p class="small" style="margin:6px 0 0">Con el GPS, la app te lleva a la salida y al llegar aparece "Empezar navegación". Fuera del parque, usa la simulación.</p>
+<h2 style="margin-top:18px">Rutas que usan este sendero</h2>
+${ROUTES.filter(r=>r.trails.includes(t.id)).map(r=>`<a class="card" href="#mapa" data-route="${r.id}" style="margin-top:8px"><span class="bar" style="background:#F2B705"></span><span style="flex:1"><h3>${esc(r.nombre)}</h3><span class="meta">${r.trails.map(i=>esc(byId[i].nombre)).join(' → ')}</span></span><span class="small">ver ›</span></a>`).join('')||'<p class="small">Aún no hay rutas sugeridas con este sendero.</p>'}
+<h2 style="margin-top:18px">Fotos</h2>
+<div class="gal" id="galtrail"><div>Sin fotos aún</div><div></div><div></div></div>
+<label class="add">+ Añadir fotos<input type="file" accept="image/*" multiple data-gal="galtrail"></label>
+<div class="btns" style="margin-top:14px"><a class="b ol" href="#mapa" data-focus="${t.id}">Ver en el mapa</a><a class="b ol" href="${esc(t.trailforks_url)}" target="_blank" rel="noopener">Abrir en Trailforks</a></div>
+<div class="card" style="margin-top:16px;flex-direction:column;align-items:stretch"><b>¿Cómo estaba el trail?</b><div class="btns"><button class="b gr" type="button" data-toast="Gracias. En la versión real llegará al gestor del destino.">Todo bien</button><button class="b ol" type="button" style="color:var(--red)" data-toast="Demo: aquí podrás añadir foto y la posición se guarda sola.">Hay un problema</button></div></div>`;
+setAlt(t.c[0][2],t.sentido==='solo subida'?'en el inicio':'en la salida')};
+
+/* mapa */
+let map,layers={},halo=null,focusId=null;
+const sheet=$('#sheet');
+const showTrail=id=>{const t=byId[id];sheet.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span><span class="tag" style="background:${COL[t.dificultad]}">${t.dificultad.toUpperCase()}</span> <span class="st">Abierto</span></span><button type="button" class="b ol" style="flex:none;min-height:36px" aria-label="Cerrar" id="xs">✕</button></div><h2>${esc(t.nombre)}</h2><span class="meta">${km(t.distancia_km)} · ${desn(t)} · ${min(t.tiempo_medio)} · ${esc(t.tipo)}</span>${ROUTE.trails.includes(id)?`<span class="small">Rutas que pasan por aquí: <a href="#" id="gor">${esc(ROUTE.nombre)}</a></span>`:''}<div class="btns"><a class="b ol" href="#trail-${id}">Ver ficha</a><button class="b gr" type="button" data-gps="${id}">Navegar con GPS</button></div><button class="b ol" type="button" style="min-height:36px;font-size:13px" data-nav="${id}">Simular llegada (sin GPS)</button>`;sheet.classList.add('on');setAlt(t.c[0][2],'en la salida');$('#xs').onclick=()=>sheet.classList.remove('on');const g=$('#gor');if(g)g.onclick=e=>{e.preventDefault();setMode('rutas')}};
+const showRoute=()=>{const ts=ROUTE.trails.map(i=>byId[i]);const L=ts.reduce((a,t)=>a+t.distancia_km,0),up=ts.reduce((a,t)=>a+(t.desnivel_positivo_m||0),0),dn=ts.reduce((a,t)=>a+(t.desnivel_negativo_m||0),0);
+sheet.innerHTML=`<span><span class="tag" style="background:#C99A00">RUTA SUGERIDA</span> <span class="small">Lineal</span></span><h2>${esc(ROUTE.nombre)}</h2><span class="meta">${L.toFixed(1).replace('.',',')} km · +${up} m / −${dn} m · MTB</span><b style="font-size:13px">Senderos que la componen</b>${ts.map(t=>`<a class="card" style="padding:8px" href="#trail-${t.id}"><span class="bar" style="background:${stripe(t)}"></span><span style="flex:1">${esc(t.nombre)}</span><span class="small">${t.sentido==='solo subida'?'subida':'▶ vídeo'}</span></a>`).join('')}<div class="btns"><a class="b ol" href="https://www.google.com/maps/dir/?api=1&destination=${ts[0].c[0][0]},${ts[0].c[0][1]}" target="_blank" rel="noopener">Ir a la salida</a><button class="b gr" type="button" data-gps="${ROUTE.trails.join(',')}">Navegar con GPS</button></div><button class="b ol" type="button" style="min-height:36px;font-size:13px" data-nav="${ROUTE.trails.join(',')}">Simular llegada (sin GPS)</button>`;sheet.classList.add('on')};
+const setMode=m=>{$('#mT').classList.toggle('on',m==='trails');$('#mR').classList.toggle('on',m==='rutas');if(halo){map.removeLayer(halo);halo=null}
+if(m==='rutas'){halo=L.layerGroup(ROUTE.trails.map(i=>L.polyline(byId[i].c.map(p=>[p[0],p[1]]),{color:'#F2B705',weight:16,opacity:.55,lineCap:'round'}))).addTo(map);halo.eachLayer(l=>l.bringToBack());showRoute()}else sheet.classList.remove('on')};
+const initMap=()=>{if(map||!window.L)return;map=L.map('map',{zoomControl:true,attributionControl:true,renderer:L.svg(),maxZoom:19});map.attributionControl.setPrefix(false);
+const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxNativeZoom:17,maxZoom:19,attribution:'© OpenStreetMap, SRTM · OpenTopoMap (CC-BY-SA)'}).addTo(map);
+const orto=L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}',{maxNativeZoom:19,maxZoom:19,attribution:'PNOA © IGN España'});
+L.control.layers({'Topográfico':topo,'Ortofoto':orto},null,{position:'bottomleft'}).addTo(map);
+const all=T.flatMap(t=>t.c.map(p=>[p[0],p[1]]));map.fitBounds(all,{padding:[30,30]});
+T.forEach(t=>{const ll=t.c.map(p=>[p[0],p[1]]);const g=L.layerGroup([L.polyline(ll,{color:'#fff',weight:10,opacity:.9}),L.polyline(ll,{color:COL[t.dificultad],weight:5,dashArray:t.sentido==='solo subida'?'8 6':null})]).addTo(map);
+g.eachLayer(l=>l.on('click',()=>{setMode('trails');showTrail(t.id)}));layers[t.id]=g;
+L.circleMarker(ll[0],{radius:5,color:'#fff',weight:2,fillColor:COL[t.dificultad],fillOpacity:1}).bindTooltip(t.nombre,{direction:'top'}).addTo(map).on('click',()=>{setMode('trails');showTrail(t.id)})});};
+$('#mT').onclick=()=>setMode('trails');$('#mR').onclick=()=>setMode('rutas');
+document.addEventListener('click',e=>{const a=e.target.closest('[data-focus]');if(a)focusId=a.dataset.focus});
+
+/* fotos (solo en este navegador) */
+document.addEventListener('change',e=>{const i=e.target.closest('input[data-gal]');if(!i)return;const g=document.getElementById(i.dataset.gal);
+const imgs=[...i.files].slice(0,9).map(f=>{const im=document.createElement('img');im.src=URL.createObjectURL(f);im.alt='Foto añadida';return im});
+[...g.children].filter(c=>c.tagName==='DIV').slice(0,imgs.length).forEach(c=>c.remove());imgs.reverse().forEach(im=>g.prepend(im));toast('Fotos añadidas en esta vista de prueba')});
+document.addEventListener('click',e=>{const a=e.target.closest('[data-route]');if(a)routeFocus=a.dataset.route});
+
+/* navegación simulada */
+const brg=(a,b)=>{const r=Math.PI/180,y=Math.sin((b[1]-a[1])*r)*Math.cos(b[0]*r),x=Math.cos(a[0]*r)*Math.sin(b[0]*r)-Math.sin(a[0]*r)*Math.cos(b[0]*r)*Math.cos((b[1]-a[1])*r);return Math.atan2(y,x)/r};
+const dAng=(a,b)=>((b-a+540)%360)-180;
+const turnInfo=()=>{const P=nav.pts,i=nav.i,D=nav.d;let j=i+1;while(j<P.length-1&&D[j]-D[i]<12)j++;if(j>=P.length-1){$('#tdist').textContent=Math.max(0,Math.round(D[D.length-1]-D[i]))+' m';$('#ttxt').textContent='Final del trail';$('#tarr').style.transform='rotate(0deg)';return}
+const h0=brg(P[i].ll,P[j].ll);let k=j,found=null;while(k<P.length-1&&D[k]-D[i]<180){let m=k+1;while(m<P.length-1&&D[m]-D[k]<15)m++;const a=dAng(h0,brg(P[k].ll,P[m].ll));if(Math.abs(a)>35){found={a,dist:D[k]-D[i]};break}k=m}
+if(!found){$('#tdist').textContent='Recto';$('#ttxt').textContent='Sin curvas en 180 m';$('#tarr').style.transform='rotate(0deg)';return}
+const a=Math.max(-120,Math.min(120,found.a));$('#tarr').style.transform='rotate('+Math.round(a)+'deg)';$('#tdist').textContent=Math.round(found.dist/5)*5+' m';$('#ttxt').textContent=(Math.abs(a)>75?'Curva cerrada a la ':'Curva a la ')+(a>0?'derecha':'izquierda')};
+let nav=null,gpsW=null;
+const fmtH=d=>d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+const secs=s=>{if(!s)return 300;const[h,m,x]=s.split(':').map(Number);return h*3600+m*60+x};
+const fmtD=m=>m<1000?Math.round(m)+' m':(m/1000).toFixed(1).replace('.',',')+' km';
+const appEl=document.querySelector('.app');
+const startNav=(ids,gps)=>{stopNav(true);const ts=ids.map(i=>byId[i]);const pts=[];ts.forEach((t,k)=>t.c.forEach(p=>pts.push({ll:[p[0],p[1]],e:p[2],k})));
+let d=[0];for(let i=1;i<pts.length;i++)d.push(d[i-1]+hav(pts[i-1].ll,pts[i].ll));
+nav={ts,pts,d,i:0,gps:!!gps,stage:gps?'approach':'ready',total:ts.reduce((a,t)=>a+secs(t.tiempo_medio),0)};
+if(gps){if(!navigator.geolocation){nav=null;toast('Este navegador no da acceso al GPS. Usa "Simular llegada".');return}
+gpsW=navigator.geolocation.watchPosition(onPos,err=>{const n=nav;stopNav(true);toast(err.code===1?'Permiso de ubicación denegado. Actívalo o usa "Simular llegada".':'No llega la señal GPS. Prueba al aire libre o usa "Simular llegada".')},{enableHighAccuracy:true,maximumAge:2000,timeout:20000})}
+location.hash='#mapa'};
+const stopNav=quiet=>{if(gpsW!==null){navigator.geolocation.clearWatch(gpsW);gpsW=null}if(!nav)return;clearInterval(nav.tm);if(nav.mk&&map)map.removeLayer(nav.mk);if(nav.acc&&map)map.removeLayer(nav.acc);nav=null;slides=BASE.map(x=>x.slice());$('#navb').classList.remove('on','ready');appEl.classList.remove('navmode');map&&setTimeout(()=>map.invalidateSize(),300);$('#navgo').hidden=true;slide=0;paintCar();if(!quiet)toast('Navegación terminada')};
+const paintNav=(ll,alt,off)=>{const p=nav.pts[nav.i],L=nav.d[nav.d.length-1],rem=L-nav.d[nav.i],t=nav.ts[p.k],nx=nav.ts[p.k+1];
+nav.mk.setLatLng(ll);if(nav.gps||nav.i%8===0)map.panTo(ll,{animate:true});
+const end=nav.pts[nav.pts.length-1].e,eta=new Date(Date.now()+nav.total*1000*rem/L),e=alt??p.e;
+slides[0]=off>35?['⚠ Fuera del trazado','A '+fmtD(off)+' de '+esc(t.nombre)]:['▲ '+esc(t.nombre),'Quedan '+fmtD(rem)];
+slides[1]=['Puesta de sol 17:56','Llegada estimada '+fmtH(eta)];slides[2]=['Después',nx?esc(nx.nombre):'Fin de la ruta'];paintCar();
+setAlt(e,(e>end?'↓ ':'↑ ')+Math.abs(Math.round(e-end))+' m al final');$('#navt').textContent=(nav.gps?'Navegando con GPS: ':'Navegando (simulado): ')+t.nombre;
+turnInfo();if(rem<15){const id=t.id;stopNav(true);toast('Has llegado. ¿Cómo estaba la ruta?');location.hash='#trail-'+id;return true}};
+const stepNav=()=>{if(!nav)return;const p=nav.pts[nav.i];if(paintNav(p.ll,null,0))return;nav.i++;if(nav!==null&&nav.i>=nav.pts.length)nav.i=nav.pts.length-1};
+const nearest=(ll,from,to)=>{let bi=from,bd=1e9;for(let i=Math.max(0,from);i<=Math.min(nav.pts.length-1,to);i++){const dd=hav(ll,nav.pts[i].ll);if(dd<bd){bd=dd;bi=i}}return[bi,bd]};
+function onPos(pos){if(!nav||!map)return;const ll=[pos.coords.latitude,pos.coords.longitude],acc=pos.coords.accuracy,alt=pos.coords.altitude;
+if(!nav.mk)nav.mk=L.circleMarker(ll,{radius:9,color:'#fff',weight:3,fillColor:'#1F6FD1',fillOpacity:1}).addTo(map);
+if(!nav.acc)nav.acc=L.circle(ll,{radius:acc,color:'#1F6FD1',weight:1,fillOpacity:.1}).addTo(map);nav.acc.setLatLng(ll).setRadius(acc);
+if(nav.stage==='approach'){const dS=hav(ll,nav.pts[0].ll);nav.mk.setLatLng(ll);$('#navb').classList.add('on');
+if(dS<=30){nav.stage='ready';runNav();return}
+$('#navt').textContent='Dirígete a la salida de '+nav.ts[0].nombre+' · '+fmtD(dS)+(acc>30?' (GPS ±'+Math.round(acc)+' m)':'');setAlt(alt??null,'GPS');
+if(!nav.fit){nav.fit=1;map.fitBounds(L.latLngBounds([ll,nav.pts[0].ll]),{padding:[80,80],maxZoom:17})}return}
+if(nav.stage!=='run'){nav.mk.setLatLng(ll);return}
+let lo=nav.i,hi=nav.i;while(lo>0&&nav.d[nav.i]-nav.d[lo-1]<20)lo--;while(hi<nav.pts.length-1&&nav.d[hi+1]-nav.d[nav.i]<80)hi++;let[i,dd]=nearest(ll,lo,hi);if(dd>=60){const[j,dj]=nearest(ll,0,nav.pts.length-1);if(dj<25){i=j;dd=dj}}if(dd<60)nav.i=i;paintNav(ll,alt,dd)}
+const runNav=()=>{if(!nav||!map||nav.tm)return;sheet.classList.remove('on');$('#navb').classList.add('on');
+if(!nav.mk)nav.mk=L.circleMarker(nav.pts[0].ll,{radius:9,color:'#fff',weight:3,fillColor:'#1F6FD1',fillOpacity:1}).addTo(map);
+if(nav.stage==='approach'){$('#navt').textContent='Buscando tu posición GPS…';return}
+if(nav.stage==='ready'){map.setView(nav.pts[0].ll,17);$('#navb').classList.add('ready');$('#navt').textContent='Estás en la salida de '+nav.ts[0].nombre;$('#navgo').hidden=false;setAlt(nav.pts[0].e,'en la salida');slides[0]=['Listo para salir',nav.ts.map(t=>t.nombre).join(' → ')];slide=0;paintCar();if(nav.gps&&navigator.vibrate)navigator.vibrate(200);return}
+appEl.classList.add('navmode');setTimeout(()=>map.invalidateSize(),300);$('#navb').classList.remove('ready');$('#navgo').hidden=true;
+if(nav.gps){map.setView(nav.mk.getLatLng(),18);return}
+map.fitBounds(L.latLngBounds(nav.pts.map(p=>p.ll)),{padding:[60,60]});nav.tm=setInterval(stepNav,250)};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-nav],[data-gps]');if(b){e.preventDefault();b.dataset.gps?startNav(b.dataset.gps.split(','),true):startNav(b.dataset.nav.split(','))}});
+$('#navx').onclick=()=>stopNav();
+$('#navgo').onclick=()=>{if(!nav)return;nav.stage='run';runNav()};
+
+/* rutas por hash */
+const H={st:[],p:-1,nav:0};
+const TIT={explorer:'Guiana Explorer',inicio:'Ride Bierzo',guia:'Guía de uso','gran-corta':'Gran Corta',mapa:'Mapa · Gran Corta',info:'Gran Corta'};
+const track=h=>{if(H.nav){H.nav=0}else if(H.st[H.p-1]===h){H.p--}else if(H.st[H.p+1]===h){H.p++}else if(H.st[H.p]!==h){H.st=H.st.slice(0,H.p+1);H.st.push(h);H.p++}
+};
+const goH=dir=>{const n=H.p+dir;if(n<0||n>=H.st.length)return false;H.p=n;H.nav=1;location.hash='#'+H.st[n];return true};
+const hint=(dir)=>{const e=$('#swh');e.textContent=dir<0?'←':'→';e.style.left=dir<0?'12px':'';e.style.right=dir<0?'':'12px';e.style.display='grid';clearTimeout(hint.t);hint.t=setTimeout(()=>e.style.display='none',350)};
+let sw=null;
+document.addEventListener('touchstart',e=>{const t=e.touches[0];if(e.touches.length>1||e.target.closest('.chips,.terr,input'))return sw=null;
+const onMap=e.target.closest('#map'),edge=t.clientX<28||t.clientX>innerWidth-28;sw=(onMap&&!edge)?null:{x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
+document.addEventListener('touchend',e=>{if(!sw)return;const t=e.changedTouches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y;
+if(Math.abs(dx)>70&&Math.abs(dy)<Math.abs(dx)*.5&&Date.now()-sw.t<700){const dir=dx>0?-1:1;if(goH(dir))hint(dir)}sw=null},{passive:true});
+const route=()=>{const h=location.hash.slice(1)||'explorer';track(h);let v=h,tab=h;
+if(h.startsWith('trail-')&&byId[h.slice(6)]){v='trail';tab='gran-corta';ficha(byId[h.slice(6)])}
+if(h==='explorer'||h==='guia')tab='inicio';
+if(h==='info'){toast('Info: normas, cómo llegar y contacto · próximamente');v='gran-corta';tab='info'}
+if(!document.getElementById('v-'+v)){v='explorer';tab='inicio'}
+document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
+document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.t===tab));
+if(v!=='mapa'){sheet.classList.remove('on');if(nav&&nav.tm)stopNav(true)}
+if(v==='mapa'){initMap();setTimeout(()=>{map&&map.invalidateSize();if(nav){runNav();return}if(routeFocus){routeFocus=null;setMode('rutas');return}if(focusId&&layers[focusId]){map.fitBounds(L.featureGroup(layers[focusId].getLayers()).getBounds(),{padding:[60,60]});showTrail(focusId);focusId=null}},50)}
+if(v==='inicio'||v==='gran-corta'||v==='explorer')setAlt(byId['next-level'].c[0][2],'salida superior');
+window.scrollTo(0,0)};
+window.addEventListener('hashchange',route);
+paintCar();route();
+}
+</script>
+</body>
+</html>
