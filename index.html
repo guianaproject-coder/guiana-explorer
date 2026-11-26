@@ -713,6 +713,9 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--orange);outline-off
 .gcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .vbtn{position:absolute;right:10px;z-index:900;min-width:52px;min-height:44px;border:0;border-radius:12px;background:var(--navy);color:#fff;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.exag{position:absolute;left:10px;top:calc(var(--hh) + 10px);z-index:900;display:flex;align-items:center;gap:4px;background:var(--card);border-radius:12px;padding:4px;box-shadow:0 1px 4px rgba(0,0,0,.3);font-weight:700;font-size:14px}
+.exag button{width:44px;height:40px;border:0;border-radius:9px;background:var(--navy);color:#fff;font-size:20px;font-weight:700}
+.exag span{min-width:96px;text-align:center}
 #map3d{height:calc(100vh - var(--hh) - 76px);min-height:420px;background:#0b1620}
 .video iframe{width:100%;height:100%;border:0;display:block}
 .swipehint{position:fixed;top:50%;z-index:1200;width:44px;height:44px;margin-top:-22px;border-radius:22px;background:var(--navy);color:#fff;display:none;place-items:center;font-size:22px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
@@ -910,6 +913,7 @@ main{flex:1;padding-bottom:84px}
 
 <section class="view" id="v-mapa3d">
   <button type="button" class="vbtn" id="to2d" style="top:calc(var(--hh) + 10px)" aria-label="Volver al mapa 2D">2D</button>
+  <div class="exag" role="group" aria-label="Escala del relieve"><button type="button" id="exm" aria-label="Menos relieve">−</button><span id="exv">Relieve ×2,5</span><button type="button" id="exp" aria-label="Más relieve">+</button></div>
   <div id="map3d" aria-label="Mapa 3D de Gran Corta"></div>
 </section>
 
@@ -1081,7 +1085,8 @@ $('#mT').onclick=()=>setMode('trails');$('#mR').onclick=()=>setMode('rutas');
 document.addEventListener('click',e=>{const a=e.target.closest('[data-focus]');if(a)focusId=a.dataset.focus});
 
 /* mapa 3D (MapLibre, se carga al abrirlo) */
-let m3=null,m3load=null;
+let m3=null,m3load=null,EXG=2.5;
+const setExg=v=>{EXG=Math.max(1,Math.min(5,Math.round(v*2)/2));$('#exv').textContent='Relieve ×'+String(EXG).replace('.',',');if(m3&&m3.getSource('dem'))m3.setTerrain({source:'dem',exaggeration:EXG})};
 const libre=()=>m3load||(m3load=new Promise((ok,ko)=>{const c=document.createElement('link');c.rel='stylesheet';c.href='https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';document.head.appendChild(c);
 const j=document.createElement('script');j.src='https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';j.onload=ok;j.onerror=ko;document.head.appendChild(j)}));
 const init3d=()=>{if(m3){setTimeout(()=>m3.resize(),50);return}libre().then(()=>{const ml=window.maplibregl;
@@ -1094,12 +1099,13 @@ tr:{type:'geojson',data:gj}},
 layers:[{id:'orto',type:'raster',source:'orto'},
 {id:'trc',type:'line',source:'tr',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#fff','line-width':7,'line-opacity':.9}},
 {id:'trl',type:'line',source:'tr',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['get','color'],'line-width':4,'line-opacity':['case',['get','cerrado'],.35,1]}}],
-terrain:{source:'dem',exaggeration:1.5}},
+terrain:{source:'dem',exaggeration:EXG}},
 bounds:[[Math.min(...xs),Math.min(...ys)],[Math.max(...xs),Math.max(...ys)]],fitBoundsOptions:{padding:40},pitch:65,bearing:-25});
 m3.addControl(new ml.NavigationControl({visualizePitch:true}),'bottom-right');
 m3.on('load',()=>{m3.easeTo({pitch:65,bearing:-25,duration:0})});
 m3.on('click','trl',e=>{const f=e.features[0];location.hash='#trail-'+f.properties.id});
 m3.on('mouseenter','trl',()=>m3.getCanvas().style.cursor='pointer');m3.on('mouseleave','trl',()=>m3.getCanvas().style.cursor='')}).catch(()=>toast('No se pudo cargar el mapa 3D. Revisa la conexión.'))};
+$('#exm').onclick=()=>setExg(EXG-.5);$('#exp').onclick=()=>setExg(EXG+.5);
 $('#to3d').onclick=()=>{location.hash='#mapa3d'};$('#to2d').onclick=()=>{location.hash='#mapa'};
 
 /* panel del gestor */
