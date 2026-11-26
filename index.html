@@ -718,6 +718,12 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--orange);outline-off
 .exag span{min-width:96px;text-align:center}
 .medot{width:16px;height:16px;border-radius:50%;background:#1F6FD1;border:3px solid #fff;box-shadow:0 0 0 2px rgba(31,111,209,.35)}
 @media (prefers-reduced-motion:no-preference){.mepulse{animation:mp 2s ease-out infinite}@keyframes mp{0%{stroke-opacity:.8;stroke-width:2}100%{stroke-opacity:0;stroke-width:14}}}
+.navprof{position:fixed;left:50%;transform:translateX(-50%);width:min(480px,100%);bottom:76px;z-index:955;background:var(--card);border-radius:16px 16px 0 0;box-shadow:0 -3px 12px rgba(0,0,0,.2);display:none;flex-direction:column}
+.navprof.on{display:flex}
+.navprof button.np{min-height:48px;border:0;background:none;color:var(--ink);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 16px;width:100%}
+.navprof .npb{display:none;padding:0 12px 10px}.navprof.open .npb{display:block}
+.navprof svg{width:100%;height:120px;display:block}
+.npl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 #map3d{height:calc(100vh - var(--hh) - 76px);min-height:420px;background:#0b1620}
 .video iframe{width:100%;height:100%;border:0;display:block}
 .swipehint{position:fixed;top:50%;z-index:1200;width:44px;height:44px;margin-top:-22px;border-radius:22px;background:var(--navy);color:#fff;display:none;place-items:center;font-size:22px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
@@ -977,6 +983,7 @@ main{flex:1;padding-bottom:84px}
 </main>
 
 <div class="sheet" id="sheet" role="dialog" aria-label="Detalle"></div>
+<div class="navprof" id="navprof"><button type="button" class="np" id="npt" aria-expanded="false" aria-controls="npb"><span id="nps">Perfil</span><span id="npa">▲ Ver perfil</span></button><div class="npb" id="npb"><svg id="npsvg" viewBox="0 0 340 120" preserveAspectRatio="none" role="img" aria-label="Perfil de la ruta con tu posición"></svg><div class="npl"><span id="npl0"></span><span id="npl1"></span><span id="npl2"></span></div></div></div>
 <div class="toast" id="toast" role="status"></div>
 
 <nav class="tabs" aria-label="Navegación principal">
@@ -1205,14 +1212,28 @@ nav={ts,pts,d,i:0,gps:!!gps,stage:gps?'approach':'ready',total:ts.reduce((a,t)=>
 if(gps){if(!navigator.geolocation){nav=null;toast('Este navegador no da acceso al GPS. Usa "Simular llegada".');return}
 gpsW=navigator.geolocation.watchPosition(onPos,err=>{const n=nav;stopNav(true);toast(err.code===1?'Permiso de ubicación denegado. Actívalo o usa "Simular llegada".':'No llega la señal GPS. Prueba al aire libre o usa "Simular llegada".')},{enableHighAccuracy:true,maximumAge:2000,timeout:20000})}
 location.hash='#mapa'};
-const stopNav=quiet=>{if(gpsW!==null){navigator.geolocation.clearWatch(gpsW);gpsW=null}if(!nav)return;clearInterval(nav.tm);if(nav.mk&&map)map.removeLayer(nav.mk);if(nav.acc&&map)map.removeLayer(nav.acc);nav=null;slides=BASE.map(x=>x.slice());$('#navb').classList.remove('on','ready');appEl.classList.remove('navmode');map&&setTimeout(()=>map.invalidateSize(),300);$('#navgo').hidden=true;slide=0;paintCar();if(!quiet)toast('Navegación terminada')};
+const stopNav=quiet=>{if(gpsW!==null){navigator.geolocation.clearWatch(gpsW);gpsW=null}$('#navprof').classList.remove('on');if(!nav)return;clearInterval(nav.tm);if(nav.mk&&map)map.removeLayer(nav.mk);if(nav.acc&&map)map.removeLayer(nav.acc);nav=null;slides=BASE.map(x=>x.slice());$('#navb').classList.remove('on','ready');appEl.classList.remove('navmode');map&&setTimeout(()=>map.invalidateSize(),300);$('#navgo').hidden=true;slide=0;paintCar();if(!quiet)toast('Navegación terminada')};
+/* perfil durante la navegación */
+let npOpen=false;
+const npBuild=()=>{const P=nav.pts,D=nav.d,L=D[D.length-1]||1,es=P.map(p=>p.e),lo=Math.min(...es),hi=Math.max(...es),W=340,H=120,top=12,bot=18;
+const X=d=>d/L*W,Y=e=>top+(hi-e)/((hi-lo)||1)*(H-top-bot);nav.np={X,Y,lo,hi,L};
+let segs='';nav.ts.forEach((t,k)=>{const idx=P.map((p,i)=>i).filter(i=>P[i].k===k);if(!idx.length)return;const pts=idx.map(i=>X(D[i]).toFixed(1)+' '+Y(P[i].e).toFixed(1));
+segs+=`<path d="M${pts[0].split(' ')[0]} ${H} L${pts.join(' L')} L${pts[pts.length-1].split(' ')[0]} ${H}Z" fill="${COL[t.dificultad]}" fill-opacity=".14"/><path d="M${pts.join(' L')}" fill="none" stroke="${COL[t.dificultad]}" stroke-width="2.5" vector-effect="non-scaling-stroke"/>`});
+$('#npsvg').innerHTML=segs+`<path id="npdone" d="" fill="none" stroke="#18232B" stroke-opacity=".35" stroke-width="4" vector-effect="non-scaling-stroke"/><line id="npline" x1="0" x2="0" y1="0" y2="${H}" stroke="#E9922C" stroke-width="2" vector-effect="non-scaling-stroke"/><circle id="npdot" r="5" cx="0" cy="0" fill="#E9922C" stroke="#fff" stroke-width="2"/>`;
+$('#npl0').textContent=Math.round(P[0].e)+' m';$('#npl2').textContent=Math.round(P[P.length-1].e)+' m';$('#navprof').classList.add('on')};
+const npPaint=e=>{if(!nav||!nav.np)return;const {X,Y,L}=nav.np,i=nav.i,D=nav.d,P=nav.pts,x=X(D[i]),y=Y(P[i].e);
+$('#npline').setAttribute('x1',x);$('#npline').setAttribute('x2',x);$('#npdot').setAttribute('cx',x);$('#npdot').setAttribute('cy',y);
+$('#npdone').setAttribute('d','M'+P.slice(0,i+1).map((p,j)=>X(D[j]).toFixed(1)+' '+Y(p.e).toFixed(1)).join(' L'));
+const ahead=P.slice(i);let up=0,dn=0;for(let j=1;j<ahead.length;j++){const dd=ahead[j].e-ahead[j-1].e;if(dd>0)up+=dd;else dn-=dd}
+$('#nps').textContent=Math.round(e??P[i].e)+' m · quedan '+fmtD(L-D[i]);$('#npl1').textContent='Por delante: +'+Math.round(up)+' m / −'+Math.round(dn)+' m'};
+$('#npt').onclick=()=>{npOpen=!npOpen;$('#navprof').classList.toggle('open',npOpen);$('#npt').setAttribute('aria-expanded',npOpen);$('#npa').textContent=npOpen?'▼ Ocultar':'▲ Ver perfil'};
 const paintNav=(ll,alt,off)=>{const p=nav.pts[nav.i],L=nav.d[nav.d.length-1],rem=L-nav.d[nav.i],t=nav.ts[p.k],nx=nav.ts[p.k+1];
 nav.mk.setLatLng(ll);if(nav.gps||nav.i%8===0)map.panTo(ll,{animate:true});
 const end=nav.pts[nav.pts.length-1].e,eta=new Date(Date.now()+nav.total*1000*rem/L),e=alt??p.e;
 slides[0]=off>35?['⚠ Fuera del trazado','A '+fmtD(off)+' de '+esc(t.nombre)]:['▲ '+esc(t.nombre),'Quedan '+fmtD(rem)];
 slides[1]=['Puesta de sol '+SUNSET,'Llegada estimada '+fmtH(eta)];slides[2]=['Después',nx?esc(nx.nombre):'Fin de la ruta'];paintCar();
 setAlt(e,(e>end?'↓ ':'↑ ')+Math.abs(Math.round(e-end))+' m al final');$('#navt').textContent=(nav.gps?'Navegando con GPS: ':'Navegando (simulado): ')+t.nombre;
-turnInfo();if(rem<15){const id=t.id;stopNav(true);toast('Has llegado. ¿Cómo estaba la ruta?');location.hash='#trail-'+id;return true}};
+npPaint(alt);turnInfo();if(rem<15){const id=t.id;stopNav(true);toast('Has llegado. ¿Cómo estaba la ruta?');location.hash='#trail-'+id;return true}};
 const stepNav=()=>{if(!nav)return;const p=nav.pts[nav.i];if(paintNav(p.ll,null,0))return;nav.i++;if(nav!==null&&nav.i>=nav.pts.length)nav.i=nav.pts.length-1};
 const nearest=(ll,from,to)=>{let bi=from,bd=1e9;for(let i=Math.max(0,from);i<=Math.min(nav.pts.length-1,to);i++){const dd=hav(ll,nav.pts[i].ll);if(dd<bd){bd=dd;bi=i}}return[bi,bd]};
 function onPos(pos){if(!nav||!map)return;const ll=[pos.coords.latitude,pos.coords.longitude],acc=pos.coords.accuracy,alt=pos.coords.altitude;
@@ -1228,7 +1249,7 @@ const runNav=()=>{if(!nav||!map||nav.tm)return;sheet.classList.remove('on');$('#
 if(!nav.mk)nav.mk=L.circleMarker(nav.pts[0].ll,{radius:9,color:'#fff',weight:3,fillColor:'#1F6FD1',fillOpacity:1}).addTo(map);
 if(nav.stage==='approach'){$('#navt').textContent='Buscando tu posición GPS…';return}
 if(nav.stage==='ready'){map.setView(nav.pts[0].ll,17);$('#navb').classList.add('ready');$('#navt').textContent='Estás en la salida de '+nav.ts[0].nombre;$('#navgo').hidden=false;setAlt(nav.pts[0].e,'en la salida');slides[0]=['Listo para salir',nav.ts.map(t=>t.nombre).join(' → ')];slide=0;paintCar();if(nav.gps&&navigator.vibrate)navigator.vibrate(200);return}
-appEl.classList.add('navmode');setTimeout(()=>map.invalidateSize(),300);$('#navb').classList.remove('ready');$('#navgo').hidden=true;
+appEl.classList.add('navmode');npBuild();$('#navprof').classList.toggle('open',npOpen);npPaint();setTimeout(()=>map.invalidateSize(),300);$('#navb').classList.remove('ready');$('#navgo').hidden=true;
 if(nav.gps){map.setView(nav.mk.getLatLng(),18);return}
 map.fitBounds(L.latLngBounds(nav.pts.map(p=>p.ll)),{padding:[60,60]});nav.tm=setInterval(stepNav,250)};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-nav],[data-gps]');if(b){e.preventDefault();b.dataset.gps?startNav(b.dataset.gps.split(','),true):startNav(b.dataset.nav.split(','))}});
@@ -1263,6 +1284,7 @@ if(h==='info'){toast('Info: normas, cómo llegar y contacto · próximamente');v
 if(!document.getElementById('v-'+v)){v='explorer';tab='inicio'}
 document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
 document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.t===tab));
+$('#navprof').classList.toggle('on',v==='mapa'&&!!(nav&&nav.np));
 if(v!=='mapa'){sheet.classList.remove('on');if(nav&&nav.tm)stopNav(true)}
 if(v==='mapa3d'){init3d();meStart()}
 if(v==='gestor')gShow();
