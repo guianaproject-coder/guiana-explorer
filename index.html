@@ -897,6 +897,7 @@ main{flex:1;padding-bottom:84px}
     <div class="counts" id="counts"></div>
     <div class="tip"><b>¿Primera vez aquí?</b> Empieza por El Aprendiz y sigue la progresión de saltos: El Aprendiz → El Crisol → Next Level.</div>
     <div class="btns" style="margin-top:12px"><a class="b gr" href="#mapa">Abrir el mapa</a></div>
+    <div class="gcard" data-plan="gran-corta"><b>Planifica tu salida</b><label class="fld">¿Qué día quieres venir?<input type="date" data-pd></label><div data-pr role="status"></div></div>
     <h2 style="margin-top:22px">Consejos en Gran Corta</h2>
     <div class="list">
       <div class="card">Casco siempre. Protecciones recomendadas en los trails rojos.</div>
@@ -927,6 +928,7 @@ main{flex:1;padding-bottom:84px}
     <div class="warn" id="pdanota" style="display:none"></div>
     <div class="counts" id="pdacounts"></div>
     <div class="btns" style="margin-top:12px"><a class="b gr" href="#mapa">Abrir el mapa</a></div>
+    <div class="gcard" data-plan="puerta-de-ancares"><b>Planifica tu salida</b><label class="fld">¿Qué día quieres venir?<input type="date" data-pd></label><div data-pr role="status"></div></div>
     <div class="chips zchips" id="pdazch" role="group" aria-label="Zonas" style="margin-top:16px"></div>
     <div id="pda-zonas"></div>
     <h2 style="margin-top:22px">Consejos en Puerta de Ancares</h2>
@@ -1007,7 +1009,15 @@ const nthSunday=(y,m,n)=>{const d=new Date(y,m,1);d.setDate(1+((7-d.getDay())%7)
 const cazaSeason=(now=new Date())=>{const y=now.getFullYear();for(const s0 of [nthSunday(y,9,4),nthSunday(y-1,9,4)]){const e=nthSunday(s0.getFullYear()+1,0,4);e.setHours(23,59);if(now>=s0&&now<=e)return{ini:s0,fin:e}}return null};
 const fmtDM=d=>d.toLocaleDateString('es-ES',{day:'numeric',month:'short'});
 const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-const cazaHoy=did=>{const d=sD(did);return d.caza_fecha&&d.caza_fecha===todayISO()?d:null};
+const nC=x=>String(x||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().trim();
+const cacerias=did=>{const d=sD(did);return Array.isArray(d.cacerias)?d.cacerias:(d.caza_fecha?[{fecha:d.caza_fecha,coto:d.caza_zona||''}]:[])};
+const cotoMatch=(c,nombre,mat)=>!c.coto||nC(c.coto)===nC(nombre)||nC(c.coto)===nC(mat)||nC(c.coto).includes(nC(nombre));
+const cazasDia=(did,f)=>cacerias(did).filter(c=>c.fecha===f);
+const trailCazas=(t,f)=>cazasDia(t.dest,f).filter(c=>!c.coto||(t.cotos||[]).some(([m])=>cotoMatch(c,(COTOS[m]||{}).nombre||m,m)));
+const isoOf=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const fmtF=f=>new Date(f+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+const cazaHoy=did=>{const c=cazasDia(did,todayISO());return c.length?{caza_zona:c.map(x=>x.coto||'todo el destino').join(', ')}:null};
+let huntInside=null;
 const COL={azul:'#1F6FD1',rojo:'#D23B2E',verde:'#2E8B3D',negro:'#1B1B1B',acceso:'#8C7B5A'};
 const ROUTE={id:'parking-superior-inferior',nombre:'Del parking superior al inferior',trails:['el-crisol','el-alquimista','trilobite']};
 const ROUTES=[ROUTE];let routeFocus=null;
@@ -1053,10 +1063,19 @@ const stH=e=>`<span class="st stc ${e}">● ${ST[e]||ST.abierto}</span>`;
 const fmtUpd=iso=>{if(!iso)return '';const d=new Date(iso);return '· actualizado '+d.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})};
 const ytId=u=>{const m=String(u||'').match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([\w-]{11})/);return m?m[1]:null};
 const vimeoId=u=>{const m=String(u||'').match(/vimeo\.com\/(?:video\/)?(\d+)/);return m?m[1]:null};
-const applyE=()=>{renderLists();[['gran-corta','gc'],['puerta-de-ancares','pda']].forEach(([id,k])=>{const d=sD(id);$('#'+k+'st').innerHTML=stH(d.estado);$('#'+k+'upd').textContent=fmtUpd(E.actualizado);
+const planRender=card=>{const did=card.dataset.plan,inp=card.querySelector('[data-pd]');if(!inp.value)inp.value=todayISO();const f=inp.value,day=new Date(f+'T12:00'),se=cazaSeason(day),cz=cazasDia(did,f);
+let h='';const zs=DEST[did].zonas;
+if(cz.length){const af=TD(did).filter(t=>trailCazas(t,f).length);
+h=`<div class="warn" style="background:light-dark(#FDECEA,#3a1515)"><b>⛔ ${esc(fmtF(f))}: hay cacería colectiva${cz.some(c=>c.coto)?' en '+esc(cz.map(c=>c.coto).filter(Boolean).join(', ')):' en el destino'}.</b> No se puede entrar en la zona de la cacería.</div>`+
+zs.map(z=>{const ts=TZ(z.id);if(!ts.length)return '';const a=ts.filter(t=>af.includes(t));return `<p style="margin:8px 0 0"><b>${esc(z.nombre)}:</b> ${a.length===0?'<span class="stc abierto">● sin cacería, puedes rodar</span>':a.length===ts.length?'<span class="stc cerrado">● toda la zona afectada</span>':'<span class="stc precaucion">● '+a.length+' de '+ts.length+' trails afectados</span>'}</p>`+(a.length&&a.length<ts.length?`<p class="small" style="margin:2px 0 0">Evita: ${a.map(t=>esc(t.nombre)).join(', ')}</p>`:'')}).join('')}
+else h=`<p style="margin:6px 0 0"><span class="stc abierto">● ${esc(fmtF(f))}: no hay cacerías avisadas.</span></p>`+(se?`<p class="small" style="margin:4px 0 0">Es temporada de caza: vuelve a mirarlo el día antes, pueden añadirse nuevas cacerías.</p>`:'');
+card.querySelector('[data-pr]').innerHTML=h};
+document.addEventListener('change',e=>{const c=e.target.closest('[data-plan]');if(c)planRender(c)});
+const renderAlerts=()=>{const hunts=Object.entries(DEST).map(([id,D])=>{const c=cazaHoy(id);return c?'Hoy hay cacería colectiva en '+D.corto+' ('+c.caza_zona+'): prohibido el acceso a esa zona.':''}).filter(Boolean);
+const msgs=[huntInside?'⛔ Estás dentro del coto '+huntInside+', con cacería hoy. Sal de la zona.':'',E.aviso_general,...hunts].filter(Boolean);const ab=$('#alertbar');ab.classList.toggle('on',msgs.length>0);ab.style.background=huntInside?'#B3261E':'';ab.style.color=huntInside?'#fff':'';ab.textContent=msgs.map(m=>m.startsWith('⛔')?m:'⚠ '+m).join('  ')};
+const applyE=()=>{document.querySelectorAll('[data-plan]').forEach(planRender);renderLists();[['gran-corta','gc'],['puerta-de-ancares','pda']].forEach(([id,k])=>{const d=sD(id);$('#'+k+'st').innerHTML=stH(d.estado);$('#'+k+'upd').textContent=fmtUpd(E.actualizado);
 const n=$('#'+k+'nota');n.style.display=d.nota?'block':'none';n.textContent=d.nota||''});
-const hunts=Object.entries(DEST).map(([id,D])=>{const c=cazaHoy(id);return c?'Hoy hay cacería colectiva en '+D.corto+(c.caza_zona?' ('+c.caza_zona+')':'')+': prohibido el acceso a esa zona.':''}).filter(Boolean);
-const msgs=[E.aviso_general,...hunts].filter(Boolean);const ab=$('#alertbar');ab.classList.toggle('on',msgs.length>0);ab.textContent=msgs.map(m=>'⚠ '+m).join('  ');
+renderAlerts();
 BASE[0][1]='Ride Bierzo · '+DEST[curDest].corto+' · '+(ST[sD(curDest).estado]||'Abierto');if(!nav){slides[0]=BASE[0].slice();paintCar()}
 if(map)T.forEach(t=>layers[t.id]&&layers[t.id].eachLayer(l=>l.setStyle&&l.setStyle({opacity:sT(t.id).estado==='cerrado'?.3:(l.options.color==='#fff'?.9:1)})));
 const h=location.hash.slice(1);if(h.startsWith('trail-')&&byId[h.slice(6)])ficha(byId[h.slice(6)])};
@@ -1122,8 +1141,10 @@ ${sT(t.id).aviso?`<div class="warn"><b>Aviso del gestor:</b> ${esc(sT(t.id).avis
 ${profile(t)}${t.perfil_aproximado?'<p class="small" style="margin:4px 0 0">Perfil de altitud aproximado.</p>':''}
 ${t.aviso?`<div class="warn"><b>Aviso:</b> ${esc(t.aviso)}</div>`:''}
 <h2 style="margin-top:18px">Descripción</h2><p>${esc(t.descripcion||'Sin descripción todavía.')}</p>
-${(()=>{const cs=t.cotos||[];if(!cs.length)return '';const se=cazaSeason(),ch=cazaHoy(t.dest);
+${(()=>{const cs=t.cotos||[];if(!cs.length)return '';const se=cazaSeason(),hoy=trailCazas(t,todayISO()),ch=hoy.length?{caza_zona:hoy.map(x=>x.coto||'todo el destino').join(', ')}:null;
+const prox=[];for(let i=1;i<=14;i++){const d=new Date();d.setDate(d.getDate()+i);const f=isoOf(d);trailCazas(t,f).forEach(c=>prox.push(fmtF(f)+(c.coto?' ('+c.coto+')':'')))}
 return `<h2 style="margin-top:18px">Caza</h2>`+(ch?`<div class="warn" style="background:light-dark(#FDECEA,#3a1515)"><b>Hoy hay cacería colectiva${ch.caza_zona?' en '+esc(ch.caza_zona):''}.</b> Está prohibido entrar en la zona de la cacería.</div>`:se?`<div class="warn">Temporada de caza abierta (${fmtDM(se.ini)} – ${fmtDM(se.fin)}). Revisa los avisos de cacerías antes de salir.</div>`:'')+
+(prox.length?`<div class="warn" style="margin-top:8px"><b>Próximas cacerías que afectan a este trail:</b> ${prox.map(esc).join(' · ')}</div>`:'')+
 `<p class="small" style="margin:8px 0 0">Cotos que atraviesa: ${cs.map(([m,pc])=>esc((COTOS[m]||{}).nombre||m)+' ('+m+(COTOS[m]?', '+esc(COTOS[m].municipio):'')+')'+(cs.length>1?' · '+pc+' %':'')).join(' — ')}</p><p class="small" style="margin:4px 0 0">Límites de cotos informativos y sin valor legal (Junta de Castilla y León).</p>`})()}
 ${t.acceso?`<p class="small"><b>Acceso:</b> ${esc(t.acceso)}</p>`:''}
 <p class="small">Elementos: ${esc((t.elementos||[]).join(', '))}</p>
@@ -1174,10 +1195,12 @@ if(m3&&window.maplibregl){if(!ME.m3){const el=document.createElement('div');el.c
 let cotoQ={ll:null,t:0};
 const cotoLookup=()=>{if(!ME.ll)return;const now=Date.now();if(cotoQ.ll&&hav(cotoQ.ll,ME.ll)<80&&now-cotoQ.t<120000)return;cotoQ={ll:ME.ll.slice(),t:now};
 const [y,x]=ME.ll,d=0.0001;fetch('https://idecyl.jcyl.es/geoserver/caza/ows?service=WFS&version=1.1.0&request=GetFeature&typeName=caza:caza_cyl_cotos_tc&outputFormat=application/json&propertyName=nombre,matricula,term_munic&bbox='+(x-d)+','+(y-d)+','+(x+d)+','+(y+d)+',EPSG:4326')
-.then(r=>r.ok?r.json():Promise.reject()).then(j=>{const c=$('#cotochip');const fs=j.features.map(f=>f.properties);if(!fs.length){c.hidden=true;return}
-const ch=Object.keys(DEST).map(cazaHoy).filter(Boolean).find(z=>fs.some(f=>z.caza_zona&&(z.caza_zona.toUpperCase().includes(f.nombre)||z.caza_zona.toUpperCase().includes(f.matricula))));
+.then(r=>r.ok?r.json():Promise.reject()).then(j=>{const c=$('#cotochip');const fs=j.features.map(f=>f.properties);if(!fs.length){c.hidden=true;if(huntInside){huntInside=null;renderAlerts()}return}
+const hoy=todayISO(),hit=fs.find(f=>Object.keys(DEST).some(did=>cazasDia(did,hoy).some(c=>c.coto&&cotoMatch(c,f.nombre,f.matricula))));const ch=!!hit;
+const prev=huntInside;huntInside=hit?hit.nombre:null;if(prev!==huntInside)renderAlerts();
+if(hit&&prev!==hit.nombre){toast('⛔ Has entrado en el coto '+hit.nombre+': hoy hay cacería colectiva');if(navigator.vibrate)navigator.vibrate([400,200,400,200,400])}
 c.hidden=false;c.classList.toggle('alert',!!ch);c.textContent=(ch?'⛔ Cacería hoy en este coto: no puedes estar aquí · ':cazaSeason()?'🦌 Temporada de caza · ':'')+'Coto '+fs.map(f=>f.nombre+(f.term_munic?' ('+f.term_munic+')':'')).join(' / ');
-if(ch&&navigator.vibrate)navigator.vibrate([300,150,300])}).catch(()=>{})};
+}).catch(()=>{})};
 const meStart=()=>{ME.want=true;if(ME.w!==null||!navigator.geolocation||document.visibilityState==='hidden')return;
 ME.w=navigator.geolocation.watchPosition(p=>{ME.ll=[p.coords.latitude,p.coords.longitude];ME.acc=p.coords.accuracy;meDraw();cotoLookup()},e=>{if(e.code===1&&!ME.warned){ME.warned=true;toast('Activa la ubicación para verte en el mapa')}},{enableHighAccuracy:true,maximumAge:5000,timeout:30000})};
 const meStop=()=>{if(ME.w!==null){navigator.geolocation.clearWatch(ME.w);ME.w=null}};
@@ -1214,14 +1237,17 @@ $('#to3d').onclick=()=>{location.hash='#mapa3d'};$('#to2d').onclick=()=>{locatio
 const REPO='guianaproject-coder/guiana-explorer',GK='ge_gestor_token';
 const tok=()=>{try{return localStorage.getItem(GK)}catch(e){return null}};
 const SEL=v=>Object.entries(ST).map(([k,l])=>`<option value="${k}"${v===k?' selected':''}>${l}</option>`).join('');
+const cotosDe=did=>[...new Set(TD(did).flatMap(t=>(t.cotos||[]).map(([m])=>m)))];
+const cRow=(did,c)=>`<div class="g2" data-crow style="align-items:end"><label class="fld">Día<input type="date" data-cf value="${esc(c.fecha||'')}"></label><label class="fld">Coto<select data-cc><option value="">Todo el destino</option>${cotosDe(did).map(m=>{const n=(COTOS[m]||{}).nombre||m;return `<option value="${esc(n)}"${nC(c.coto)===nC(n)?' selected':''}>${esc(n)} (${m})</option>`}).join('')}</select></label><button type="button" class="b ol" data-cdel style="min-height:40px;grid-column:1/-1">Quitar</button></div>`;
+document.addEventListener('click',e=>{const a=e.target.closest('[data-cadd]');if(a){a.previousElementSibling.insertAdjacentHTML('beforeend',cRow(a.dataset.cadd,{fecha:todayISO(),coto:''}));return}const d=e.target.closest('[data-cdel]');if(d)d.closest('[data-crow]').remove()});
 const gFill=()=>{$('#g-aviso').value=E.aviso_general||'';
-$('#gtrails').innerHTML=Object.entries(DEST).map(([did,D])=>{const d=sD(did);return `<h2 style="margin-top:20px">${esc(D.nombre)}</h2><div class="gcard" data-gd="${did}"><div class="g2"><label class="fld">Estado del destino<select data-k="estado">${SEL(d.estado)}</select></label><label class="fld">Nota (opcional)<input data-k="nota" value="${esc(d.nota)}" placeholder="Ej.: suelo húmedo"></label></div><div class="g2"><label class="fld">Cacería colectiva (día)<input type="date" data-k="caza_fecha" value="${esc(d.caza_fecha||'')}"></label><label class="fld">Coto o zona afectada<input data-k="caza_zona" value="${esc(d.caza_zona||'')}" placeholder="Ej.: VALDEPICOS"></label></div></div>`+
+$('#gtrails').innerHTML=Object.entries(DEST).map(([did,D])=>{const d=sD(did);return `<h2 style="margin-top:20px">${esc(D.nombre)}</h2><div class="gcard" data-gd="${did}"><div class="g2"><label class="fld">Estado del destino<select data-k="estado">${SEL(d.estado)}</select></label><label class="fld">Nota (opcional)<input data-k="nota" value="${esc(d.nota)}" placeholder="Ej.: suelo húmedo"></label></div><b style="margin-top:4px">Cacerías colectivas</b><div data-cl>${cacerias(did).map(c=>cRow(did,c)).join('')}</div><button type="button" class="b ol" data-cadd="${did}" style="min-height:40px">+ Añadir cacería</button></div>`+
 TD(did).map((t,i,a)=>{const x=sT(t.id),zh=DEST[did].zonas.length>1&&(i===0||ZOF[a[i-1].zona]!==ZOF[t.zona])?`<h3 style="margin-top:14px">${esc(ZONA[t.zona].split(' · ')[0])}</h3>`:'';return zh+`<div class="gcard" data-gt="${t.id}"><b><span class="tag" style="background:${COL[t.dificultad]}">${t.dificultad.toUpperCase()}</span> ${esc(t.nombre)}</b>
 <div class="g2"><label class="fld">Estado<select data-k="estado">${SEL(x.estado)}</select></label><label class="fld">ITRS<input data-k="itrs" value="${esc(x.itrs)}" placeholder="pendiente"></label></div>
 <label class="fld">Aviso (opcional)<input data-k="aviso" value="${esc(x.aviso)}" placeholder="Ej.: salto 3 en obras"></label>
 <label class="fld">Vídeo (enlace de YouTube o Vimeo)<input data-k="video" value="${esc(x.video)}" inputmode="url" placeholder="https://youtu.be/..."></label></div>`}).join('')}).join('')};
 const gRead=()=>{const tr={},ds={};document.querySelectorAll('[data-gt]').forEach(c=>{const o={};c.querySelectorAll('[data-k]').forEach(i=>{const v=i.value.trim();if(v)o[i.dataset.k]=v});tr[c.dataset.gt]=o});
-document.querySelectorAll('[data-gd]').forEach(c=>{ds[c.dataset.gd]={estado:c.querySelector('[data-k=estado]').value,nota:c.querySelector('[data-k=nota]').value.trim(),caza_fecha:c.querySelector('[data-k=caza_fecha]').value,caza_zona:c.querySelector('[data-k=caza_zona]').value.trim()}});
+document.querySelectorAll('[data-gd]').forEach(c=>{ds[c.dataset.gd]={estado:c.querySelector('[data-k=estado]').value,nota:c.querySelector('[data-k=nota]').value.trim(),cacerias:[...c.querySelectorAll('[data-crow]')].map(r=>({fecha:r.querySelector('[data-cf]').value,coto:r.querySelector('[data-cc]').value})).filter(x=>x.fecha)}});
 return{destino:ds['gran-corta'],destinos:ds,aviso_general:$('#g-aviso').value.trim(),trails:tr,actualizado:new Date().toISOString()}};
 const gShow=()=>{const t=tok();$('#glogin').hidden=!!t;$('#gform').hidden=!t;if(t)gFill()};
 $('#gsave').onclick=()=>{const v=$('#gtok').value.trim();if(!v){toast('Pega la clave');return}
@@ -1285,7 +1311,7 @@ setAlt(e,(e>end?'↓ ':'↑ ')+Math.abs(Math.round(e-end))+' m al final');$('#na
 npPaint(alt);turnInfo();if(rem<15){const id=t.id;stopNav(true);toast('Has llegado. ¿Cómo estaba la ruta?');location.hash='#trail-'+id;return true}};
 const stepNav=()=>{if(!nav)return;const p=nav.pts[nav.i];if(paintNav(p.ll,null,0))return;nav.i++;if(nav!==null&&nav.i>=nav.pts.length)nav.i=nav.pts.length-1};
 const nearest=(ll,from,to)=>{let bi=from,bd=1e9;for(let i=Math.max(0,from);i<=Math.min(nav.pts.length-1,to);i++){const dd=hav(ll,nav.pts[i].ll);if(dd<bd){bd=dd;bi=i}}return[bi,bd]};
-function onPos(pos){if(!nav||!map)return;const ll=[pos.coords.latitude,pos.coords.longitude],acc=pos.coords.accuracy,alt=pos.coords.altitude;
+function onPos(pos){if(!nav||!map)return;const ll=[pos.coords.latitude,pos.coords.longitude],acc=pos.coords.accuracy,alt=pos.coords.altitude;ME.ll=ll;ME.acc=acc;cotoLookup();
 if(!nav.mk)nav.mk=L.circleMarker(ll,{radius:9,color:'#fff',weight:3,fillColor:'#1F6FD1',fillOpacity:1}).addTo(map);
 if(!nav.acc)nav.acc=L.circle(ll,{radius:acc,color:'#1F6FD1',weight:1,fillOpacity:.1}).addTo(map);nav.acc.setLatLng(ll).setRadius(acc);
 if(nav.stage==='approach'){const dS=hav(ll,nav.pts[0].ll);nav.mk.setLatLng(ll);$('#navb').classList.add('on');
