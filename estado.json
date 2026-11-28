@@ -1,6 +1,113 @@
 {
-  "destino": {"estado": "abierto", "nota": ""},
+  "destino": {
+    "estado": "abierto",
+    "nota": "",
+    "cacerias": [
+      {
+        "fecha": "2026-11-28",
+        "coto": ""
+      },
+      {
+        "fecha": "2026-11-28",
+        "coto": ""
+      }
+    ]
+  },
+  "destinos": {
+    "gran-corta": {
+      "estado": "abierto",
+      "nota": "",
+      "cacerias": [
+        {
+          "fecha": "2026-11-28",
+          "coto": ""
+        },
+        {
+          "fecha": "2026-11-28",
+          "coto": ""
+        }
+      ]
+    },
+    "puerta-de-ancares": {
+      "estado": "abierto",
+      "nota": "",
+      "cacerias": []
+    }
+  },
   "aviso_general": "",
-  "trails": {},
-  "actualizado": "2026-11-26T22:00:00Z"
+  "trails": {
+    "el-aprendiz": {
+      "estado": "abierto"
+    },
+    "el-crisol": {
+      "estado": "abierto"
+    },
+    "next-level": {
+      "estado": "cerrado"
+    },
+    "trilobite": {
+      "estado": "abierto"
+    },
+    "el-alquimista": {
+      "estado": "abierto"
+    },
+    "reentrada-atmosferica": {
+      "estado": "abierto"
+    },
+    "cinturon-de-los-asteroides": {
+      "estado": "abierto"
+    },
+    "agujero-negro": {
+      "estado": "abierto"
+    },
+    "tunel-de-gusano": {
+      "estado": "abierto"
+    },
+    "acelerador-de-particulas": {
+      "estado": "abierto"
+    },
+    "la-lanzadera": {
+      "estado": "abierto"
+    },
+    "tierra-plana": {
+      "estado": "abierto"
+    },
+    "fase-de-ascenso": {
+      "estado": "abierto"
+    },
+    "desfase-lunar": {
+      "estado": "abierto"
+    },
+    "flujo-interestelar": {
+      "estado": "abierto"
+    },
+    "orbita-baja": {
+      "estado": "abierto"
+    },
+    "el-abejorro-inicial": {
+      "estado": "abierto"
+    },
+    "el-abejorro": {
+      "estado": "abierto"
+    },
+    "el-picon": {
+      "estado": "abierto"
+    },
+    "los-zoalas": {
+      "estado": "abierto"
+    },
+    "los-cortines": {
+      "estado": "abierto"
+    },
+    "el-hierro-1": {
+      "estado": "abierto"
+    },
+    "el-hierro-2": {
+      "estado": "abierto"
+    },
+    "pena-del-carbon": {
+      "estado": "abierto"
+    }
+  },
+  "actualizado": "2026-11-28T13:42:15.462Z"
 }
